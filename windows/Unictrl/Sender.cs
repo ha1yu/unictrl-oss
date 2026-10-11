@@ -191,7 +191,6 @@ internal sealed class Sender : IDisposable
                 Log.Write("connected", $"peer={name}");
                 status(Loc.T($"Connected to {name} · sharing this PC's keyboard and mouse", $"已连接到 {name} · 正在共享这台电脑的键盘和鼠标"));
                 Online = true;
-                send = Send;
                 pongAt = DateTime.UtcNow;
                 Connected?.Invoke();
                 if (string.IsNullOrEmpty(settings.MacId)) Task.Run(LearnMacId);
