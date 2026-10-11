@@ -50,6 +50,7 @@ public sealed partial class MainWindow : Window
         ShowRoleDetail();
         MacSideBox.SelectedIndex = settings.MacSide == "left" ? 0 : 1;
         MacOffsetSlider.Value = settings.MacOffsetMm;
+        MacSpeedSlider.Value = settings.MacPointerScale;
         UpdateMacOffsetText();
         RestoreDetails();
         StartAtLoginSwitch.IsOn = settings.StartAtLogin;
@@ -110,6 +111,8 @@ public sealed partial class MainWindow : Window
         MacPosTitle.Text = "Mac 位置";
         MacPosDetail.Text = "Mac 位于这台电脑屏幕的哪一侧";
         HeightTitle.Text = "高度偏移";
+        MacSpeedTitle.Text = "Mac 上的指针速度";
+        MacSpeedText.Text = "缩放发送给 Mac 的移动量，指针在 Mac 上时生效";
         PairHint.Text = "在 Mac 上点菜单栏的 Unictrl，选择“配对 Windows PC…”，然后输入它显示的代码。";
         PairAgainButton.Content = "重新配对";
         PairButton.Content = "配对";
@@ -339,6 +342,13 @@ public sealed partial class MainWindow : Window
         settings.MacOffsetMm = Math.Round(e.NewValue, 0);
         settings.Save();
         UpdateMacOffsetText();
+    }
+
+    private void OnMacSpeedChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (Math.Abs(MacSpeedSlider.Value - settings.MacPointerScale) < 0.01) return;
+        settings.MacPointerScale = Math.Round(e.NewValue, 2); // read by the hook for each move
+        settings.Save();
     }
 
     private void UpdateMacOffsetText() =>

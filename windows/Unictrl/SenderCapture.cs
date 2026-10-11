@@ -27,6 +27,9 @@ internal sealed class SenderCapture : IDisposable
     private volatile bool remote;
     private DateTime suppressUntil = DateTime.MinValue;
     private Native.Point lastPt;
+    /// The monitor the (clipped) cursor sits on, cached on entering the remote state so the hook
+    /// does no per-event display queries.
+    private MonitorGeometry remoteMonitor;
     /// Raw counts since the last hook event: the edge push and `moveRaw` read them. Raw input is not
     /// clamped to the screen, so it still reports the push after the cursor hits the edge.
     private int rawDx, rawDy;
@@ -121,6 +124,7 @@ internal sealed class SenderCapture : IDisposable
         else if (message == WmDisplayChange)
         {
             push.Reset(); // the screens and their edges just changed
+            if (remote && Native.GetCursorPos(out var at)) remoteMonitor = Displays.At(at.X, at.Y);
         }
         return Native.DefWindowProcW(window, message, wParam, lParam);
     }
@@ -186,6 +190,7 @@ internal sealed class SenderCapture : IDisposable
         var clip = new Native.Rect32 { Left = screen.Left, Top = screen.Top, Right = screen.Right, Bottom = screen.Bottom };
         Native.ClipCursor(ref clip); // the cursor stays on this screen while it is logically away
         CursorHider.Hide();
+        remoteMonitor = Displays.At(data.Pt.X, data.Pt.Y);
         lastPt = data.Pt;
         rawDx = rawDy = 0;
         var entry = SenderCore.Cross(screen, new(data.Pt.X, data.Pt.Y), settings.MacSide != "left", settings.MacOffsetMm);
@@ -198,7 +203,6 @@ internal sealed class SenderCapture : IDisposable
         switch (message)
         {
             case WmMouseMove:
-                var monitor = Displays.At(data.Pt.X, data.Pt.Y);
                 var scale = settings.MacPointerScale;
                 if (settings.MacPointerMode == "native")
                 {
@@ -209,8 +213,8 @@ internal sealed class SenderCapture : IDisposable
                 else
                 {
                     sender.Send(Messages.Move(
-                        (float)((data.Pt.X - lastPt.X) / monitor.PixelsPerMm * scale),
-                        (float)((data.Pt.Y - lastPt.Y) / monitor.PixelsPerMm * scale), SentUs()));
+                        (float)((data.Pt.X - lastPt.X) / remoteMonitor.PixelsPerMm * scale),
+                        (float)((data.Pt.Y - lastPt.Y) / remoteMonitor.PixelsPerMm * scale), SentUs()));
                 }
                 rawDx = rawDy = 0;
                 lastPt = data.Pt;

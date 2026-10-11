@@ -7,61 +7,76 @@ import CoreGraphics
 /// pointer ballistics on injected input, so the physical mode is the honest one. Keys arrive as HID
 /// usages of the physical key (KeyMap inverted) and are posted as virtual-key events, so the Mac's
 /// own layout and IME decide the character. Everything posted is tagged with ScrollPoster.tag so
-/// Unictrl's own tap ignores it. Main thread only (PeerServer delivers on the main queue).
-@MainActor
+/// Unictrl's own tap ignores it.
+///
+/// All state lives on one serial `userInteractive` queue (CGEventPost is thread-safe): the pointer
+/// must never wait behind AppKit or the UI, which is what the sender's tap thread does for the
+/// other direction.
 final class InputInjector {
     /// Sends a message back to the peer that is driving us (`leave`).
     var send: ((MessageWriter) -> Void)?
-    /// The pointer arrived here / went home, for the menu UI.
+    /// The pointer arrived here / went home, for the menu UI. Always called on the main thread.
     var onActiveChange: ((Bool) -> Void)?
     /// The Mac's wheel settings, applied to what the sender forwards (set from AppController).
     var reverseWheel = false
     var smoothWheel = true
-    private let localScroll = ScrollSmoother()
     /// Where the smoother's glide lands; AppController points it at ScrollPoster.
     var localScrollHandler: (Double, Double) -> Void = { _, _ in }
-
-    init() {
-        localScroll.emit = { [weak self] dx, dy in
-            MainActor.assumeIsolated { self?.localScrollHandler(dx, dy) }
-        }
-    }
 
     /// Raw mouse counts to a millimetre, for the native pointer mode. A typical mouse reports
     /// 800-1600 counts an inch; 40 counts/mm is the middle of that range.
     static let rawCountsPerMm = 40.0
 
-    private(set) var active = false
+    private let queue = DispatchQueue(label: "unictrl.inject", qos: .userInteractive)
+    private let localScroll = ScrollSmoother()
+    private var active = false
     private var screen = CGRect.zero
     private var screenID: CGDirectDisplayID = 0
     private var pointsPerMm = 5.0
     private var x = 0.0, y = 0.0
     private var openLeft = false, openRight = false
-    private var fromRight = true
     private var suppressEdgeUntil = Date.distantPast
     private var flags: CGEventFlags = []
     private var heldKeys: Set<UInt16> = []
     private var heldButtons: [Bool] = [false, false, false, false, false]
-    private let source = CGEventSource(stateID: .privateState)
+    private var source: CGEventSource?
     /// While the pointer is away, a local mouse or trackpad brings the cursor back (as CursorHider does).
     private var parked: CGPoint?
-    private var localWatch: Timer?
+    private var localWatch: DispatchSourceTimer?
+
+    init() {
+        localScroll.emit = { [weak self] dx, dy in
+            DispatchQueue.main.async { self?.localScrollHandler(dx, dy) }
+        }
+        queue.sync { self.source = CGEventSource(stateID: .privateState) }
+    }
+
+    /// Whether the pointer is here right now; safe from any thread.
+    var isActive: Bool { queue.sync { active } }
 
     // MARK: Arriving and leaving
 
     func enter(yMm: Float, fromRight: Bool, leftOpen: Bool, rightOpen: Bool, resume: Bool) {
+        queue.async { self.enterNow(yMm: yMm, fromRight: fromRight, leftOpen: leftOpen, rightOpen: rightOpen, resume: resume) }
+    }
+
+    /// The pointer is no longer ours: the edge it left through, or why (disconnect, quit).
+    func gone(_ reason: String) {
+        queue.async { self.goneNow(reason) }
+    }
+
+    private func enterNow(yMm: Float, fromRight: Bool, leftOpen: Bool, rightOpen: Bool, resume: Bool) {
         guard let geometry = DisplayGeometry.main else { return }
         screen = geometry.bounds
         screenID = geometry.id
         pointsPerMm = geometry.pointsPerMm
-        self.fromRight = fromRight
         // No edge flags (a v1 sender): only the entry edge leads back.
         if leftOpen || rightOpen {
-            self.openLeft = leftOpen
-            self.openRight = rightOpen
+            openLeft = leftOpen
+            openRight = rightOpen
         } else {
-            self.openLeft = !fromRight
-            self.openRight = fromRight
+            openLeft = !fromRight
+            openRight = fromRight
         }
         if resume, let here = CGEvent(source: nil)?.location, screen.contains(here) {
             x = here.x
@@ -76,16 +91,17 @@ final class InputInjector {
         localScroll.stop()
         stopLocalWatch()
         CursorVisibility.show()
-        CursorShield.shared.hide()
+        CursorShield.hideLater()
         active = true
         suppressEdgeUntil = Date().addingTimeInterval(0.25) // let the hand finish the gesture
-        postMouseMoved(dx: 0, dy: 0)
-        onActiveChange?(true)
-        Log.write("inject_enter", "from_right=\(fromRight) y_mm=\(yMm)")
+        if let source {
+            postMouseMoved(dx: 0, dy: 0, source: source)
+        }
+        announce(true)
+        Log.write("inject_enter", "from_right=\(fromRight) y_mm=\(yMm) points_per_mm=\(String(format: "%.2f", pointsPerMm))")
     }
 
-    /// The pointer is no longer ours: the edge it left through, or why (disconnect, quit).
-    func gone(_ reason: String) {
+    private func goneNow(_ reason: String) {
         guard active else { return }
         active = false
         releaseHeld()
@@ -93,30 +109,43 @@ final class InputInjector {
             // Gone back to the sender: hide our cursor while the pointer is there, as the Mac does
             // in the sender role and the PC's CursorHider does in the receiver role.
             CursorVisibility.hide()
-            CursorShield.shared.show(on: screenID)
+            CursorShield.showLater(on: screenID)
             startLocalWatch()
         } else {
             CursorVisibility.show()
-            CursorShield.shared.hide()
+            CursorShield.hideLater()
             stopLocalWatch()
         }
-        onActiveChange?(false)
+        announce(false)
         Log.write("inject_leave", "reason=\(reason)")
+    }
+
+    /// UI callbacks back on the main thread.
+    private func announce(_ value: Bool) {
+        DispatchQueue.main.async { [weak self] in self?.onActiveChange?(value) }
     }
 
     // MARK: Motion
 
     func move(dxMm: Float, dyMm: Float) {
-        applyMotion(dx: Double(dxMm) * pointsPerMm, dy: Double(dyMm) * pointsPerMm)
+        queue.async { self.moveNow(dxMm: dxMm, dyMm: dyMm) }
     }
 
     func moveRaw(dx: Float, dy: Float) {
+        queue.async { self.moveRawNow(dx: dx, dy: dy) }
+    }
+
+    private func moveNow(dxMm: Float, dyMm: Float) {
+        applyMotion(dx: Double(dxMm) * pointsPerMm, dy: Double(dyMm) * pointsPerMm)
+    }
+
+    private func moveRawNow(dx: Float, dy: Float) {
         applyMotion(dx: Double(dx) / Self.rawCountsPerMm * pointsPerMm,
                     dy: Double(dy) / Self.rawCountsPerMm * pointsPerMm)
     }
 
     private func applyMotion(dx: Double, dy: Double) {
-        guard active else { return }
+        guard active, let source else { return }
         x += dx
         y += dy
         x = x.clamped(to: screen.minX...screen.maxX - 1)
@@ -125,7 +154,7 @@ final class InputInjector {
             if openRight, x >= screen.maxX - 1 { exitEdge(right: true); return }
             if openLeft, x <= screen.minX { exitEdge(right: false); return }
         }
-        postMouseMoved(dx: dx, dy: dy)
+        postMouseMoved(dx: dx, dy: dy, source: source)
     }
 
     private func exitEdge(right: Bool) {
@@ -133,10 +162,10 @@ final class InputInjector {
         leave.f32(Float((y - screen.midY) / pointsPerMm))
         leave.u8(right ? 1 : 0)
         send?(leave)
-        gone(right ? "right_edge" : "left_edge")
+        goneNow(right ? "right_edge" : "left_edge")
     }
 
-    private func postMouseMoved(dx: Double, dy: Double) {
+    private func postMouseMoved(dx: Double, dy: Double, source: CGEventSource) {
         guard let event = CGEvent(mouseEventSource: source, mouseType: .mouseMoved,
                                   mouseCursorPosition: CGPoint(x: x, y: y), mouseButton: .center) else { return }
         event.setIntegerValueField(.eventSourceUserData, value: ScrollPoster.tag)
@@ -148,7 +177,11 @@ final class InputInjector {
     // MARK: Buttons and wheel
 
     func button(_ button: UInt8, down: Bool) {
-        guard active, button < 5, heldButtons[Int(button)] != down else { return }
+        queue.async { self.buttonNow(button, down: down) }
+    }
+
+    private func buttonNow(_ button: UInt8, down: Bool) {
+        guard active, button < 5, heldButtons[Int(button)] != down, let source else { return }
         heldButtons[Int(button)] = down
         let types: [(CGEventType, CGEventType)] = [(.leftMouseDown, .leftMouseUp), (.rightMouseDown, .rightMouseUp),
                                                    (.otherMouseDown, .otherMouseUp), (.otherMouseDown, .otherMouseUp),
@@ -162,6 +195,10 @@ final class InputInjector {
     }
 
     func wheel(dyLines: Float, dxLines: Float) {
+        queue.async { self.wheelNow(dyLines: dyLines, dxLines: dxLines) }
+    }
+
+    private func wheelNow(dyLines: Float, dxLines: Float) {
         guard active else { return }
         var dy = Double(dyLines)
         var dx = Double(dxLines)
@@ -177,21 +214,25 @@ final class InputInjector {
     // MARK: Keys
 
     func key(page: UInt8, usage: UInt16, down: Bool) {
-        guard active else { return }
+        queue.async { self.keyNow(page: page, usage: usage, down: down) }
+    }
+
+    private func keyNow(page: UInt8, usage: UInt16, down: Bool) {
+        guard active, let source else { return }
         if page == 0x07 && usage == KeyMap.capsLock {
-            setCapsLock(down)
+            setCapsLock(down, source: source)
             return
         }
         // Modifier keys change the flags everyone else sees, not a keyDown.
         if let modifier = Self.modifierUsages[usage], let keycode = KeyMap.inverse[usage] {
             if down { flags.formUnion([modifier, .maskNonCoalesced]) }
             else { flags.subtract([modifier, .maskNonCoalesced]) }
-            postFlagsChanged(keycode: keycode)
+            postFlagsChanged(keycode: keycode, source: source)
             if down { heldKeys.insert(usage) } else { heldKeys.remove(usage) }
             return
         }
         guard page == 0x07 else {
-            mediaKey(usage: usage, down: down)
+            mediaKey(usage: usage, down: down, source: source)
             return
         }
         // PrintScreen has no Mac key; F13 is the usual stand-in.
@@ -221,7 +262,7 @@ final class InputInjector {
         0xE3: .maskCommand, 0xE7: .maskCommand,
     ]
 
-    private func postFlagsChanged(keycode: CGKeyCode) {
+    private func postFlagsChanged(keycode: CGKeyCode, source: CGEventSource) {
         guard let event = CGEvent(keyboardEventSource: source, virtualKey: keycode, keyDown: true) else { return }
         event.type = .flagsChanged
         event.flags = flags.union([.maskNonCoalesced])
@@ -231,7 +272,7 @@ final class InputInjector {
 
     /// Caps Lock arrives as the sender's state: switch only when it differs, and the two never end
     /// up opposite.
-    private func setCapsLock(_ on: Bool) {
+    private func setCapsLock(_ on: Bool, source: CGEventSource) {
         let current = CGEventSource.flagsState(.combinedSessionState).contains(.maskAlphaShift)
         guard current != on, let event = CGEvent(keyboardEventSource: source, virtualKey: KeyMap.capsLock, keyDown: true) else { return }
         event.type = .flagsChanged
@@ -245,7 +286,7 @@ final class InputInjector {
     /// Consumer-page usages. The sound keys have virtual keycodes the system honours; media and
     /// brightness keys would need NX event synthesis or private frameworks, and are dropped for now
     /// (noted in ADAPTING.md).
-    private func mediaKey(usage: UInt16, down: Bool) {
+    private func mediaKey(usage: UInt16, down: Bool, source: CGEventSource) {
         let keycode: CGKeyCode
         switch usage {
         case 0xE9: keycode = 0x48 // sound up
@@ -264,10 +305,16 @@ final class InputInjector {
 
     /// Releases everything still held so nothing sticks on the Mac.
     private func releaseHeld() {
+        guard let source else {
+            heldKeys = []
+            heldButtons = [false, false, false, false, false]
+            flags = []
+            return
+        }
         for usage in heldKeys {
             if let modifier = Self.modifierUsages[usage], let keycode = KeyMap.inverse[usage] {
                 flags.subtract([modifier, .maskNonCoalesced])
-                postFlagsChanged(keycode: keycode)
+                postFlagsChanged(keycode: keycode, source: source)
             } else if let keycode = KeyMap.inverse[usage] ?? (usage == 0x46 ? 0x69 : nil) {
                 if let event = CGEvent(keyboardEventSource: source, virtualKey: keycode, keyDown: false) {
                     event.flags = flags.union([.maskNonCoalesced])
@@ -278,7 +325,7 @@ final class InputInjector {
         }
         heldKeys = []
         for (i, isDown) in heldButtons.enumerated() where isDown {
-            button(UInt8(i), down: false)
+            buttonNow(UInt8(i), down: false)
         }
         heldButtons = [false, false, false, false, false]
         flags = []
@@ -288,30 +335,41 @@ final class InputInjector {
 
     private func startLocalWatch() {
         parked = CGEvent(source: nil)?.location
-        localWatch?.invalidate()
-        let timer = Timer(timeInterval: 0.2, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated {
-                guard let self, let parked = self.parked, let here = CGEvent(source: nil)?.location else { return }
-                if abs(here.x - parked.x) > 2 || abs(here.y - parked.y) > 2 {
-                    self.showCursorAfterLocalMove()
-                }
+        localWatch?.cancel()
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(deadline: .now(), repeating: 0.2)
+        timer.setEventHandler { [weak self] in
+            guard let self, let parked = self.parked, let here = CGEvent(source: nil)?.location else { return }
+            if abs(here.x - parked.x) > 2 || abs(here.y - parked.y) > 2 {
+                self.showCursorAfterLocalMove()
             }
         }
-        RunLoop.main.add(timer, forMode: .common)
+        timer.resume()
         localWatch = timer
     }
 
     private func showCursorAfterLocalMove() {
         CursorVisibility.show()
-        CursorShield.shared.hide()
+        CursorShield.hideLater()
         stopLocalWatch()
         Log.write("cursor_local_move", "")
     }
 
     private func stopLocalWatch() {
-        localWatch?.invalidate()
+        localWatch?.cancel()
         localWatch = nil
         parked = nil
+    }
+}
+
+/// CursorShield is MainActor; the injector's queue reaches it through these hops.
+extension CursorShield {
+    nonisolated static func showLater(on displayID: CGDirectDisplayID) {
+        DispatchQueue.main.async { MainActor.assumeIsolated { CursorShield.shared.show(on: displayID) } }
+    }
+
+    nonisolated static func hideLater() {
+        DispatchQueue.main.async { MainActor.assumeIsolated { CursorShield.shared.hide() } }
     }
 }
 

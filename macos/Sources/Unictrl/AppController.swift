@@ -430,7 +430,7 @@ import ServiceManagement
             refreshDevices()
             broadcastArrangement()
             pushTargets()
-            if injector.active, injectorPeer == id {
+            if injector.isActive, injectorPeer == id {
                 injectorPeer = nil
                 injector.gone("disconnected") // the pointer always comes home to whoever has it
             }

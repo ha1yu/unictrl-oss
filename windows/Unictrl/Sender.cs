@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -14,7 +15,7 @@ internal sealed class Sender : IDisposable
     private readonly Settings settings;
     private readonly Action<string> status;
     private readonly CancellationTokenSource lifetime = new();
-    private readonly object sendGate = new();
+    private BlockingCollection<byte[]>? outgoing;
     private readonly SenderCapture capture;
     private TcpClient? client;
     private Action<byte[]>? send;
@@ -95,6 +96,8 @@ internal sealed class Sender : IDisposable
             {
                 Online = false;
                 send = null;
+                outgoing?.CompleteAdding(); // let the writer drain and exit
+                outgoing = null;
                 pingTimer?.Dispose();
                 pingTimer = null;
                 capture.ForceReturn("disconnected"); // the pointer always comes home
@@ -142,12 +145,29 @@ internal sealed class Sender : IDisposable
         using var channel = new SecureChannel(settings.PairingKey, clientSalt,
             handshake[SecureChannel.Magic.Length..], isServer: false);
 
-        void Send(byte[] message)
+        // The hook thread must not touch the socket: a blocking write in a low-level hook callback
+        // runs past the system's hook timeout and Windows starts dropping input. Producers only
+        // enqueue; one writer thread seals (so nonce order is the queue order) and writes.
+        var outgoing = new BlockingCollection<byte[]>();
+        send = message =>
         {
-            // Seal inside the lock: the capture thread, the ping timer and the UI all send, and the
-            // nonce counter and AesGcm are not thread-safe.
-            lock (sendGate) stream.Write(channel.Seal(message));
-        }
+            try { outgoing.Add(message); }
+            catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException) { }
+        };
+        var writer = new Thread(() =>
+        {
+            try
+            {
+                foreach (var message in outgoing.GetConsumingEnumerable())
+                    stream.Write(channel.Seal(message));
+            }
+            catch { try { client?.Dispose(); } catch { } } // a dead socket ends the session
+        })
+        { IsBackground = true, Name = "Unictrl sender out", Priority = ThreadPriority.AboveNormal };
+        writer.Start();
+        this.outgoing = outgoing;
+
+        void Send(byte[] message) => send!(message);
 
         Send(Messages.Hello(Environment.MachineName));
         var header = new byte[2];

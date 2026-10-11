@@ -181,6 +181,7 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <FontIcon Glyph="&#xE7F4;" Style="{StaticResource CardIconStyle}" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,8">
@@ -204,6 +205,16 @@
                             </StackPanel>
                             <Slider x:Name="MacOffsetSlider" Grid.Row="1" Grid.Column="2" Width="180" VerticalAlignment="Center"
                                     Minimum="-150" Maximum="150" StepFrequency="5" ValueChanged="OnMacOffsetChanged" />
+                            <Rectangle Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Height="1"
+                                       Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
+                            <StackPanel Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" Margin="0,8">
+                                <TextBlock x:Name="MacSpeedTitle" Style="{StaticResource BodyTextBlockStyle}" Text="Pointer speed on the Mac" />
+                                <TextBlock x:Name="MacSpeedText" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="Scales what is sent to the Mac while its pointer is here" />
+                            </StackPanel>
+                            <Slider x:Name="MacSpeedSlider" Grid.Row="2" Grid.Column="2" Width="180" VerticalAlignment="Center"
+                                    Minimum="0.5" Maximum="2" StepFrequency="0.05" ValueChanged="OnMacSpeedChanged" />
                         </Grid>
                     </Border>
                     <Border Style="{StaticResource CardStyle}">
