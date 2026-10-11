@@ -97,15 +97,32 @@ import ServiceManagement
         didSet {
             settings.enabled = enabled
             settings.save()
-            if !enabled { capture.returnLocal(yMm: nil, reason: "disabled") }
+            if !enabled {
+                capture.returnLocal(yMm: nil, reason: "disabled")
+                injector.gone("disabled")
+            }
             pushTargets()
             Log.write("enabled_changed", "\(enabled)")
+        }
+    }
+    /// "sender" (default): this Mac's keyboard and mouse are shared with the PCs. "receiver": a PC's
+    /// input is replayed here. Takes effect at the next start.
+    @Published var role: String {
+        didSet {
+            guard role != oldValue else { return }
+            settings.role = role
+            settings.save()
         }
     }
 
     private var settings: UnictrlSettings
     private let server: PeerServer
     private let capture: InputCapture
+    /// The receiver role ("receiver"): a sender PC's input is replayed here by the injector instead
+    /// of this Mac's input being captured and forwarded.
+    private let injector = InputInjector()
+    private var injectorPeer: String?
+    private var isReceiver: Bool { settings.role == "receiver" }
     private let rawKeyboard = RawKeyboard()
     private let pairingWindow = PairingWindow()
     private let settingsWindow = SettingsWindow()
@@ -149,6 +166,7 @@ import ServiceManagement
         }
         settings.save()
         self.settings = settings
+        role = settings.role
         enabled = settings.enabled
         reverseMouseWheel = settings.reverseMouseWheel
         smoothScrolling = settings.smoothScrolling
@@ -354,6 +372,13 @@ import ServiceManagement
         }
 
         capture.send = { [unowned self] peer, message in server.send(message, to: peer) }
+        injector.send = { [unowned self] message in
+            guard let peer = injectorPeer else { return }
+            server.send(message, to: peer)
+        }
+        injector.onActiveChange = { [unowned self] active in
+            remoteID = active ? injectorPeer : nil
+        }
         capture.onMouseWindow = { [unowned self] window in
             guard let peer = window.peer else { return }
             quality.addMouseWindow(peer, events: window.events, stalls: window.stalls, late: window.late)
@@ -376,6 +401,14 @@ import ServiceManagement
             broadcastArrangement() // every PC shows who is online
             refreshEdges()
             pushTargets()
+            if isReceiver {
+                // The receiver reports its screen to the sender after hello (protocol 0x02).
+                let size = macScreenMm
+                var screen = MessageWriter(.screen)
+                screen.f32(Float(size.width))
+                screen.f32(Float(size.height))
+                server.send(screen, to: id)
+            }
             if let grace = disconnectGrace, capture.published.remote?.id == id {
                 grace.cancel()
                 disconnectGrace = nil
@@ -388,6 +421,10 @@ import ServiceManagement
             refreshDevices()
             broadcastArrangement()
             pushTargets()
+            if injector.active, injectorPeer == id {
+                injectorPeer = nil
+                injector.gone("disconnected") // the pointer always comes home to whoever has it
+            }
             if capture.published.remote?.id == id {
                 disconnectGrace?.cancel()
                 let grace = DispatchWorkItem { [weak self] in
@@ -516,9 +553,15 @@ import ServiceManagement
         discovery = DiscoveryResponder(deviceID: server.deviceID, port: settings.port)
         discovery?.name = { [unowned self] in MainActor.assumeIsolated { macName } }
         discovery?.start()
-        installTapWhenAllowed()
-        if !RawKeyboard.accessGranted { RawKeyboard.requestAccess() }
-        startRawKeyboardWhenAllowed()
+        if isReceiver {
+            // The keyboard and mouse are on the PC; nothing to capture, and the Logitech extras do
+            // not apply. The injector is driven by the message handler instead.
+            Log.write("role", "receiver")
+        } else {
+            installTapWhenAllowed()
+            if !RawKeyboard.accessGranted { RawKeyboard.requestAccess() }
+            startRawKeyboardWhenAllowed()
+        }
 
         // Common modes: pings must go on while a menu tracks or a window resizes, or the PCs time out.
         func every(_ seconds: TimeInterval, _ body: @escaping @MainActor () -> Void) {
@@ -532,8 +575,10 @@ import ServiceManagement
         every(1) { [weak self] in self?.updateQuality() }
         Log.diagnostics = settings.diagnostics
         if settings.diagnostics { MainThreadWatchdog.start() }
-        every(3) { [weak self] in self?.capture.ensureFirstInChain() }
-        every(60) { [weak self] in self?.hidpp.reapply() }
+        if !isReceiver {
+            every(3) { [weak self] in self?.capture.ensureFirstInChain() }
+            every(60) { [weak self] in self?.hidpp.reapply() }
+        }
         // A menu bar app with no window is otherwise App Napped, which throttles those timers.
         activity = ProcessInfo.processInfo.beginActivity(
             options: [.userInitiatedAllowingIdleSystemSleep, .latencyCritical], reason: "Forwarding input to PCs")
@@ -958,6 +1003,38 @@ import ServiceManagement
                     Log.diagnostic("pc_stats", String(format: "moves=%d hitches=%d jitter_max=%.1f slow=%d inject_max=%.1f",
                                                  stats.moves, stats.hitches, stats.jitterMaxMs, stats.slowInjects, stats.injectMaxMs))
                 }
+            }
+        case .ping:
+            // The receiver answers the sender's liveness probe (protocol 0x20/0x21).
+            var pong = MessageWriter(.pong)
+            pong.u64(reader.u64() ?? 0)
+            server.send(pong, to: id)
+        case .enter where isReceiver:
+            guard let yMm = reader.f32() else { break }
+            let fromRight = reader.u8() == 1 // absent (a v1 sender): entered through the left edge
+            let flags8 = reader.u8() ?? 0
+            injectorPeer = id
+            injector.enter(yMm: yMm, fromRight: fromRight, leftOpen: flags8 & 2 != 0,
+                           rightOpen: flags8 & 4 != 0, resume: flags8 & 1 != 0)
+        case .move where isReceiver:
+            guard let dx = reader.f32(), let dy = reader.f32() else { break }
+            injector.move(dxMm: dx, dyMm: dy)
+        case .moveRaw where isReceiver:
+            guard let dx = reader.f32(), let dy = reader.f32() else { break }
+            injector.moveRaw(dx: dx, dy: dy)
+        case .button where isReceiver:
+            if let button = reader.u8(), let down = reader.u8() {
+                injector.button(button, down: down != 0)
+            }
+        case .wheel where isReceiver:
+            guard let dy = reader.f32(), let dx = reader.f32() else { break }
+            injector.wheel(dyLines: dy, dxLines: dx)
+        case .key where isReceiver:
+            guard let page = reader.u8(), let usage = reader.u16(), let down = reader.u8() else { break }
+            injector.key(page: page, usage: usage, down: down != 0)
+        case .action where isReceiver:
+            if let action = reader.u8(), let performed = KeyAction(rawValue: action) {
+                performed.performOnMac()
             }
         default:
             break

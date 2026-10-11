@@ -76,7 +76,16 @@ struct SettingsView: View {
             QualitySection(quality: controller.quality, devices: controller.devices)
 
             Section("General") {
-                Toggle("Share this Mac’s keyboard and mouse", isOn: $controller.enabled)
+                Picker(selection: $controller.role) {
+                    Text("Mac shares with the PCs").tag("sender")
+                    Text("A PC shares with this Mac").tag("receiver")
+                } label: {
+                    Text("Direction")
+                    Text("Which computer the keyboard and mouse are attached to. Changing it takes effect the next time Unictrl starts.")
+                }
+                Toggle(controller.role == "receiver" ? "Accept the PC’s keyboard and mouse" : "Share this Mac’s keyboard and mouse",
+                       isOn: $controller.enabled)
+                if controller.role == "sender" {
                 Picker(selection: $controller.shareChannel) {
                     Text("Any channel").tag(-1)
                     ForEach(0..<3) { Text("Channel \($0 + 1)").tag($0) }
@@ -121,6 +130,7 @@ struct SettingsView: View {
                 } label: {
                     Text("Pointer speed on PCs")
                     Text("Lower it if the pointer feels loose when you move fast.")
+                }
                 }
                 if controller.accessibilityGranted && controller.inputMonitoringGranted {
                     LabeledContent("Permissions") {
