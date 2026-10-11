@@ -150,12 +150,12 @@ internal static class Messages
         return message;
     }
 
-    public static byte[] Leave(Injector.Exit exit)
+    public static byte[] Leave(float yMm, bool right)
     {
         var message = new byte[6];
         message[0] = (byte)MessageType.Leave;
-        BinaryPrimitives.WriteSingleLittleEndian(message.AsSpan(1), exit.YMm);
-        message[5] = exit.Right ? (byte)1 : (byte)0;
+        BinaryPrimitives.WriteSingleLittleEndian(message.AsSpan(1), yMm);
+        message[5] = right ? (byte)1 : (byte)0;
         return message;
     }
 
@@ -175,4 +175,60 @@ internal static class Messages
         BinaryPrimitives.WriteUInt64LittleEndian(message.AsSpan(1), stamp);
         return message;
     }
+
+    // ---- Sender-role messages (sharing this PC's keyboard and mouse with a Mac) ----
+
+    public static byte[] Enter(float yMm, bool right, bool leftOpen, bool rightOpen, bool resume)
+    {
+        var message = new byte[7];
+        message[0] = (byte)MessageType.Enter;
+        BinaryPrimitives.WriteSingleLittleEndian(message.AsSpan(1), yMm);
+        message[5] = right ? (byte)1 : (byte)0;
+        byte flags = 0;
+        if (resume) flags |= 1;
+        if (leftOpen) flags |= 2;
+        if (rightOpen) flags |= 4;
+        message[6] = flags;
+        return message;
+    }
+
+    public static byte[] Move(float dxMm, float dyMm, uint sentUs) => Motion(MessageType.Move, dxMm, dyMm, sentUs);
+
+    public static byte[] MoveRaw(float dx, float dy, uint sentUs) => Motion(MessageType.MoveRaw, dx, dy, sentUs);
+
+    private static byte[] Motion(MessageType type, float dx, float dy, uint sentUs)
+    {
+        var message = new byte[13];
+        message[0] = (byte)type;
+        BinaryPrimitives.WriteSingleLittleEndian(message.AsSpan(1), dx);
+        BinaryPrimitives.WriteSingleLittleEndian(message.AsSpan(5), dy);
+        BinaryPrimitives.WriteUInt32LittleEndian(message.AsSpan(9), sentUs);
+        return message;
+    }
+
+    public static byte[] Button(byte button, bool down) => [(byte)MessageType.Button, button, down ? (byte)1 : (byte)0];
+
+    public static byte[] Wheel(float dyLines, float dxLines)
+    {
+        var message = new byte[9];
+        message[0] = (byte)MessageType.Wheel;
+        BinaryPrimitives.WriteSingleLittleEndian(message.AsSpan(1), dyLines);
+        BinaryPrimitives.WriteSingleLittleEndian(message.AsSpan(5), dxLines);
+        return message;
+    }
+
+    public static byte[] Key(byte page, ushort usage, bool down) =>
+        [(byte)MessageType.Key, page, (byte)usage, (byte)(usage >> 8), down ? (byte)1 : (byte)0];
+
+    public static byte[] Action(byte action) => [(byte)MessageType.Action, action];
+
+    public static byte[] Ping(ulong stamp)
+    {
+        var message = new byte[9];
+        message[0] = (byte)MessageType.Ping;
+        BinaryPrimitives.WriteUInt64LittleEndian(message.AsSpan(1), stamp);
+        return message;
+    }
+
+    public static byte[] Arrangement(byte[] json) => [(byte)MessageType.Arrangement, .. json];
 }
