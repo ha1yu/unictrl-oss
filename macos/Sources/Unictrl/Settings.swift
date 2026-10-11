@@ -2,6 +2,10 @@ import Foundation
 
 /// ~/Library/Application Support/Unictrl/settings.json. Kept out of Git: it holds the pairing keys.
 struct UnictrlSettings: Codable {
+    /// "sender" (default): this Mac's keyboard and mouse are shared with the PCs. "receiver": the
+    /// PCs share their input with this Mac. The transport is the same either way; only the direction
+    /// of the input messages flips.
+    var role = "sender"
     /// Paired PCs and where their screens sit.
     var peers: [PeerConfig] = []
     var arrangement = Arrangement()
@@ -52,6 +56,7 @@ struct UnictrlSettings: Codable {
         .appendingPathComponent("Unictrl/settings.json")
 
     private enum CodingKeys: String, CodingKey {
+        case role
         case pcPointerScale, pcScrollScale, shareChannel, readySound, readySoundName
         case peers, arrangement, pairingKey, deviceID, port, peerSide, verticalOffsetMm, invertScroll, scrollScale,
              reverseMouseWheel, smoothScrolling, pointerMode, enabled, sleepHandoff, showMenuBarIcon, showDockIcon,
@@ -62,6 +67,7 @@ struct UnictrlSettings: Codable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        role = try c.decodeIfPresent(String.self, forKey: .role) ?? "sender"
         peers = try c.decodeIfPresent([PeerConfig].self, forKey: .peers) ?? []
         arrangement = try c.decodeIfPresent(Arrangement.self, forKey: .arrangement) ?? Arrangement()
         pairingKey = try c.decodeIfPresent(String.self, forKey: .pairingKey) ?? ""
