@@ -230,7 +230,7 @@ private struct TipsList: View {
             DisclosureGroup {
                 ForEach(fine) { TipRow(tip: $0) }
             } label: {
-                Label("\(fine.count) checks passed", systemImage: "checkmark.circle.fill")
+                Label(String(format: NSLocalizedString("%lld checks passed", comment: ""), fine.count), systemImage: "checkmark.circle.fill")
                     .foregroundStyle(.secondary)
             }
         }

@@ -94,3 +94,8 @@
 "Connected" = "已连接";
 "On" = "开";
 "Off" = "关";
+"Enabled" = "已启用";
+"Connection: %@" = "连接：%@";
+"Rename %@" = "重命名 %@";
+"%lld checks passed" = "%lld 项检查已通过";
+"Shares only while the keyboard is on this channel; on others each computer keeps its own." = "仅当键盘在此通道上时共享；切到其他通道时各电脑独立使用。";

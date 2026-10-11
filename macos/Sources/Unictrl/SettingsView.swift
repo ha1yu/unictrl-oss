@@ -87,14 +87,13 @@ struct SettingsView: View {
                        ? NSLocalizedString("Accept the PC’s keyboard and mouse", comment: "")
                        : NSLocalizedString("Share this Mac’s keyboard and mouse", comment: ""),
                        isOn: $controller.enabled)
-                if controller.role == "sender" {
                 Picker(selection: $controller.shareChannel) {
                     Text("Any channel").tag(-1)
                     ForEach(0..<3) { Text("Channel \($0 + 1)").tag($0) }
                 } label: {
                     Text("Share on Easy-Switch")
                     Text(controller.channelAllowsSharing
-                         ? "Shares only while the keyboard is on this channel; on others each computer keeps its own."
+                         ? NSLocalizedString("Shares only while the keyboard is on this channel; on others each computer keeps its own.", comment: "")
                          : controller.statusLine + ".")
                 }
                 if controller.shareChannel >= 0 {
@@ -133,15 +132,16 @@ struct SettingsView: View {
                     Text("Pointer speed on PCs")
                     Text("Lower it if the pointer feels loose when you move fast.")
                 }
-                }
                 if controller.accessibilityGranted && controller.inputMonitoringGranted {
                     LabeledContent("Permissions") {
                         Label("Allowed", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
                     }
                 } else {
-                    PermissionRow(title: "Accessibility", detail: "Moves the pointer between computers",
+                    PermissionRow(title: NSLocalizedString("Accessibility", comment: ""),
+                                  detail: NSLocalizedString("Moves the pointer between computers", comment: ""),
                                   granted: controller.accessibilityGranted) { controller.requestAccessibility() }
-                    PermissionRow(title: "Input Monitoring", detail: "Reads the MX Keys special keys",
+                    PermissionRow(title: NSLocalizedString("Input Monitoring", comment: ""),
+                                  detail: NSLocalizedString("Reads the MX Keys special keys", comment: ""),
                                   granted: controller.inputMonitoringGranted) { controller.requestInputMonitoring() }
                 }
             }
@@ -211,7 +211,7 @@ struct SettingsView: View {
             Image(systemName: "pencil")
         }
         .buttonStyle(.borderless)
-        .help("Rename \(current)")
+        .help(String(format: NSLocalizedString("Rename %@", comment: ""), current))
     }
 
     private func detail(_ device: AppController.Device) -> String {

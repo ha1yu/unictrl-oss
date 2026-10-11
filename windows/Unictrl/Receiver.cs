@@ -71,7 +71,7 @@ internal sealed class Receiver : IDisposable
         {
             try
             {
-                status("Connecting to Mac…");
+                status(Loc.T("Connecting to Mac…", "正在连接 Mac…"));
                 Session();
             }
             catch (Exception ex) when (!lifetime.IsCancellationRequested)
@@ -79,16 +79,16 @@ internal sealed class Receiver : IDisposable
                 Log.Write("session_ended", ex.GetType().Name + ": " + ex.Message);
                 if (ex is NotPairedException)
                 {
-                    status("This Mac no longer has this PC paired. Pair again.");
+                    status(Loc.T("This Mac no longer has this PC paired. Pair again.", "此 Mac 已不与这台电脑配对，请重新配对。"));
                     lifetime.Token.WaitHandle.WaitOne(15_000); // no point asking every 1.5 s
                 }
                 else if (ex is CryptographicException)
                 {
-                    status("Not paired with this Mac. Pair again.");
+                    status(Loc.T("Not paired with this Mac. Pair again.", "尚未与此 Mac 配对，请重新配对。"));
                 }
                 else
                 {
-                    status("Looking for your Mac…");
+                    status(Loc.T("Looking for your Mac…", "正在寻找你的 Mac…"));
                     Rediscover();
                 }
             }
@@ -203,7 +203,7 @@ internal sealed class Receiver : IDisposable
                 Log.Write("connected", $"peer={name}");
                 var screen = Displays.Primary(settings.ScreenWidthMmOverride);
                 Send(Messages.Screen((float)(screen.Bounds.Width / screen.PixelsPerMm), (float)(screen.Bounds.Height / screen.PixelsPerMm)));
-                status($"Connected to {name}");
+                status(Loc.T($"Connected to {name}", $"已连接到 {name}"));
                 Connected?.Invoke();
                 if (string.IsNullOrEmpty(settings.MacId)) Task.Run(LearnMacId);
                 send = Send;

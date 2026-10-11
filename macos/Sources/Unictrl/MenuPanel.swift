@@ -9,11 +9,11 @@ struct MenuPanel: View {
         VStack(alignment: .leading, spacing: 10) {
             header
             if !controller.accessibilityGranted {
-                PermissionCallout(title: "Accessibility is off",
-                                  detail: "Needed to move the pointer to your PCs.") { controller.requestAccessibility() }
+                PermissionCallout(title: NSLocalizedString("Accessibility is off", comment: ""),
+                                  detail: NSLocalizedString("Needed to move the pointer to your PCs.", comment: "")) { controller.requestAccessibility() }
             } else if !controller.inputMonitoringGranted {
-                PermissionCallout(title: "Input Monitoring is off",
-                                  detail: "Needed for the MX Keys special keys.") { controller.requestInputMonitoring() }
+                PermissionCallout(title: NSLocalizedString("Input Monitoring is off", comment: ""),
+                                  detail: NSLocalizedString("Needed for the MX Keys special keys.", comment: "")) { controller.requestInputMonitoring() }
             }
             if !controller.devices.isEmpty {
                 Button { controller.showSettings() } label: {
@@ -27,14 +27,14 @@ struct MenuPanel: View {
                 devices
             }
             HStack(spacing: 8) {
-                ToggleTile(title: "Reverse Wheel", systemImage: "arrow.up.arrow.down", isOn: $controller.reverseMouseWheel)
-                ToggleTile(title: "Smooth Scroll", systemImage: "scroll", isOn: $controller.smoothScrolling)
+                ToggleTile(title: NSLocalizedString("Reverse Wheel", comment: ""), systemImage: "arrow.up.arrow.down", isOn: $controller.reverseMouseWheel)
+                ToggleTile(title: NSLocalizedString("Smooth Scroll", comment: ""), systemImage: "scroll", isOn: $controller.smoothScrolling)
             }
             Divider().padding(.horizontal, 4)
             VStack(spacing: 0) {
-                PanelRow(title: "Pair a Windows PC…", systemImage: "plus.circle") { controller.startPairing() }
-                PanelRow(title: "Settings…", systemImage: "gearshape", shortcut: "⌘,") { controller.showSettings() }
-                PanelRow(title: "Quit Unictrl", systemImage: "power", shortcut: "⌘Q") { controller.quit() }
+                PanelRow(title: NSLocalizedString("Pair a Windows PC…", comment: ""), systemImage: "plus.circle") { controller.startPairing() }
+                PanelRow(title: NSLocalizedString("Settings…", comment: ""), systemImage: "gearshape", shortcut: "⌘,") { controller.showSettings() }
+                PanelRow(title: NSLocalizedString("Quit Unictrl", comment: ""), systemImage: "power", shortcut: "⌘Q") { controller.quit() }
             }
         }
         .padding(12)
@@ -96,7 +96,9 @@ struct StatusLabel: View {
                 .frame(width: 6, height: 6)
             Text(text).font(.system(size: 11)).foregroundStyle(.secondary).monospacedDigit()
         }
-        .help(device.online ? "Connection: \((grade ?? .idle).label)" : "Offline")
+        .help(device.online
+              ? String(format: NSLocalizedString("Connection: %@", comment: ""), (grade ?? .idle).label)
+              : NSLocalizedString("Offline", comment: ""))
     }
 
     private var text: String {

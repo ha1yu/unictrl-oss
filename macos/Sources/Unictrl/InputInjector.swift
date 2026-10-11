@@ -14,6 +14,18 @@ final class InputInjector {
     var send: ((MessageWriter) -> Void)?
     /// The pointer arrived here / went home, for the menu UI.
     var onActiveChange: ((Bool) -> Void)?
+    /// The Mac's wheel settings, applied to what the sender forwards (set from AppController).
+    var reverseWheel = false
+    var smoothWheel = true
+    private let localScroll = ScrollSmoother()
+    /// Where the smoother's glide lands; AppController points it at ScrollPoster.
+    var localScrollHandler: (Double, Double) -> Void = { _, _ in }
+
+    init() {
+        localScroll.emit = { [weak self] dx, dy in
+            MainActor.assumeIsolated { self?.localScrollHandler(dx, dy) }
+        }
+    }
 
     /// Raw mouse counts to a millimetre, for the native pointer mode. A typical mouse reports
     /// 800-1600 counts an inch; 40 counts/mm is the middle of that range.
@@ -61,6 +73,7 @@ final class InputInjector {
         heldKeys = []
         heldButtons = [false, false, false, false, false]
         flags = []
+        localScroll.stop()
         stopLocalWatch()
         CursorVisibility.show()
         CursorShield.shared.hide()
@@ -150,8 +163,15 @@ final class InputInjector {
 
     func wheel(dyLines: Float, dxLines: Float) {
         guard active else { return }
+        var dy = Double(dyLines)
+        var dx = Double(dxLines)
+        if reverseWheel { dy = -dy; dx = -dx }
         let pixelsPerLine = 10.0 * (NSScreen.main?.backingScaleFactor ?? 2)
-        ScrollPoster.post(dx: Double(dxLines) * pixelsPerLine, dy: Double(dyLines) * pixelsPerLine)
+        if smoothWheel {
+            localScroll.add(dx: dx * pixelsPerLine, dy: dy * pixelsPerLine)
+        } else {
+            ScrollPoster.post(dx: dx * pixelsPerLine, dy: dy * pixelsPerLine)
+        }
     }
 
     // MARK: Keys

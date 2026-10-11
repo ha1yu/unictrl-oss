@@ -48,7 +48,7 @@
                 </Border>
 
                 <!-- Screens -->
-                <TextBlock Text="Screens" Style="{StaticResource SectionHeaderStyle}" />
+                <TextBlock x:Name="ScreensHeader" Text="Screens" Style="{StaticResource SectionHeaderStyle}" />
                 <Border Style="{StaticResource CardStyle}" Padding="14">
                     <StackPanel Spacing="8">
                         <TextBlock x:Name="ScreensHint" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
@@ -64,7 +64,7 @@
                 </Border>
 
                 <!-- Devices: the paired Mac -->
-                <TextBlock Text="Devices" Style="{StaticResource SectionHeaderStyle}" />
+                <TextBlock x:Name="DevicesHeader" Text="Devices" Style="{StaticResource SectionHeaderStyle}" />
                 <Border Style="{StaticResource CardStyle}">
                     <StackPanel>
                         <Grid>
@@ -84,7 +84,7 @@
                         <StackPanel x:Name="PairPanel" Margin="42,14,0,4" Spacing="8" Visibility="Collapsed">
                             <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       Text="On the Mac, click Unictrl in the menu bar, choose Pair a Windows PC…, and enter the code it shows." />
+                                       x:Name="PairHint" Text="On the Mac, click Unictrl in the menu bar, choose Pair a Windows PC…, and enter the code it shows." />
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <TextBox x:Name="CodeBox" PlaceholderText="6-digit code" MaxLength="6" Width="160"
                                          InputScope="Number" KeyDown="OnCodeKeyDown" />
@@ -99,8 +99,8 @@
                 <!-- Connection: how the pointer is doing here, live. The breakdown and the checklist fold away. -->
                 <StackPanel x:Name="ConnectionSection" Visibility="Collapsed">
                     <Grid>
-                        <TextBlock Text="Connection" Style="{StaticResource SectionHeaderStyle}" />
-                        <TextBlock Text="Last minute, live" Style="{StaticResource CaptionTextBlockStyle}" HorizontalAlignment="Right"
+                        <TextBlock x:Name="ConnectionHeader" Text="Connection" Style="{StaticResource SectionHeaderStyle}" />
+                        <TextBlock x:Name="ConnectionSub" Text="Last minute, live" Style="{StaticResource CaptionTextBlockStyle}" HorizontalAlignment="Right"
                                    VerticalAlignment="Bottom" Margin="0,0,2,8" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     </Grid>
                     <Border Style="{StaticResource CardStyle}" Padding="16,14">
@@ -148,7 +148,7 @@
                 </StackPanel>
 
                 <!-- General -->
-                <TextBlock Text="General" Style="{StaticResource SectionHeaderStyle}" />
+                <TextBlock x:Name="GeneralHeader" Text="General" Style="{StaticResource SectionHeaderStyle}" />
                 <StackPanel Spacing="4">
                     <Border Style="{StaticResource CardStyle}">
                         <Grid>
@@ -184,10 +184,10 @@
                             </Grid.RowDefinitions>
                             <FontIcon Glyph="&#xE7F4;" Style="{StaticResource CardIconStyle}" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,8">
-                                <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Mac position" />
+                                <TextBlock x:Name="MacPosTitle" Style="{StaticResource BodyTextBlockStyle}" Text="Mac position" />
                                 <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           Text="Which side of this PC's screen the Mac sits on" />
+                                           x:Name="MacPosDetail" Text="Which side of this PC's screen the Mac sits on" />
                             </StackPanel>
                             <ComboBox x:Name="MacSideBox" Grid.Column="2" Grid.Row="0" MinWidth="140" VerticalAlignment="Center"
                                       SelectionChanged="OnMacSideChanged">
@@ -197,7 +197,7 @@
                             <Rectangle Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Height="1"
                                        Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
                             <StackPanel Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Margin="0,8">
-                                <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Height offset" />
+                                <TextBlock x:Name="HeightTitle" Style="{StaticResource BodyTextBlockStyle}" Text="Height offset" />
                                 <TextBlock x:Name="MacOffsetText" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            Text="How far the Mac's centre sits below this PC's" />
@@ -215,7 +215,7 @@
                             </Grid.ColumnDefinitions>
                             <FontIcon Glyph="&#xE765;" Style="{StaticResource CardIconStyle}" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Keyboard" />
+                                <TextBlock x:Name="KeyboardTitle" Style="{StaticResource BodyTextBlockStyle}" Text="Keyboard" />
                                 <TextBlock x:Name="KeyboardDetail" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
@@ -243,10 +243,10 @@
                             </Grid.RowDefinitions>
                             <FontIcon Glyph="&#xE7E8;" Style="{StaticResource CardIconStyle}" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,8">
-                                <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Start with Windows" />
+                                <TextBlock x:Name="StartTitle" Style="{StaticResource BodyTextBlockStyle}" Text="Start with Windows" />
                                 <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           Text="Runs in the background after you sign in" />
+                                           x:Name="StartDetail" Text="Runs in the background after you sign in" />
                             </StackPanel>
                             <ToggleSwitch x:Name="StartAtLoginSwitch" Grid.Column="2" MinWidth="0" OnContent="On" OffContent="Off"
                                           Toggled="OnStartAtLoginToggled" VerticalAlignment="Center" />
@@ -254,10 +254,10 @@
                             <Rectangle Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Height="1"
                                        Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
                             <StackPanel Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" Margin="0,8">
-                                <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Show in notification area" />
+                                <TextBlock x:Name="TrayTitle" Style="{StaticResource BodyTextBlockStyle}" Text="Show in notification area" />
                                 <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           Text="The icon next to the clock" />
+                                           x:Name="TrayDetail" Text="The icon next to the clock" />
                             </StackPanel>
                             <ToggleSwitch x:Name="TraySwitch" Grid.Row="2" Grid.Column="2" MinWidth="0" OnContent="On" OffContent="Off"
                                           Toggled="OnTrayToggled" VerticalAlignment="Center" />
@@ -265,10 +265,10 @@
                             <Rectangle Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Height="1"
                                        Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
                             <StackPanel Grid.Row="4" Grid.Column="1" VerticalAlignment="Center" Margin="0,8">
-                                <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Show in taskbar" />
+                                <TextBlock x:Name="TaskTitle" Style="{StaticResource BodyTextBlockStyle}" Text="Show in taskbar" />
                                 <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           Text="Keep a taskbar button; closing the window minimizes it. With both icons off, open Unictrl from the Start menu." />
+                                           x:Name="TaskDetail" Text="Keep a taskbar button; closing the window minimizes it. With both icons off, open Unictrl from the Start menu." />
                             </StackPanel>
                             <ToggleSwitch x:Name="TaskbarSwitch" Grid.Row="4" Grid.Column="2" MinWidth="0" OnContent="On" OffContent="Off"
                                           Toggled="OnTaskbarToggled" VerticalAlignment="Center" />

@@ -359,6 +359,8 @@ import ServiceManagement
     private func applySettings() {
         settings.save()
         capture.update(settings: settings)
+        injector.reverseWheel = settings.reverseMouseWheel
+        injector.smoothWheel = settings.smoothScrolling
     }
 
     func quit() {
@@ -374,6 +376,9 @@ import ServiceManagement
         server.keyFor = { [unowned self] id in
             settings.peers.first { $0.id == id }?.pairingKey
         }
+        injector.reverseWheel = settings.reverseMouseWheel
+        injector.smoothWheel = settings.smoothScrolling
+        injector.localScrollHandler = { ScrollPoster.post(dx: $0, dy: $1) }
 
         capture.send = { [unowned self] peer, message in server.send(message, to: peer) }
         injector.send = { [unowned self] message in

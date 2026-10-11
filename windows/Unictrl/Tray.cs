@@ -106,12 +106,12 @@ internal sealed class Tray : IDisposable
     private void ShowMenu()
     {
         var menu = Native.CreatePopupMenu();
-        Native.AppendMenuW(menu, MfString, CmdOpen, "Open Unictrl");
+        Native.AppendMenuW(menu, MfString, CmdOpen, Loc.T("Open Unictrl", "打开 Unictrl"));
         Native.AppendMenuW(menu, MfSeparator, 0, null);
-        Native.AppendMenuW(menu, MfString | (IsEnabled() ? MfChecked : 0), CmdEnabled, "Enabled");
-        Native.AppendMenuW(menu, MfString | (StartsAtLogin() ? MfChecked : 0), CmdStartAtLogin, "Start at login");
+        Native.AppendMenuW(menu, MfString | (IsEnabled() ? MfChecked : 0), CmdEnabled, Loc.T("Enabled", "启用"));
+        Native.AppendMenuW(menu, MfString | (StartsAtLogin() ? MfChecked : 0), CmdStartAtLogin, Loc.T("Start at login", "登录时启动"));
         Native.AppendMenuW(menu, MfSeparator, 0, null);
-        Native.AppendMenuW(menu, MfString, CmdQuit, "Quit Unictrl");
+        Native.AppendMenuW(menu, MfString, CmdQuit, Loc.T("Quit Unictrl", "退出 Unictrl"));
         Native.GetCursorPos(out var at);
         Native.SetForegroundWindow(window);
         var command = Native.TrackPopupMenu(menu, TpmReturnCmd | TpmRightButton, at.X, at.Y, 0, window, 0);

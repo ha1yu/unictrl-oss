@@ -24,6 +24,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Localize();
         var icon = Path.Combine(AppContext.BaseDirectory, "Assets", "Unictrl.ico");
         AppWindow.SetIcon(icon);
         ExtendsContentIntoTitleBar = true;
@@ -79,7 +80,7 @@ public sealed partial class MainWindow : Window
         };
         Closed += (_, _) => { receiver?.Dispose(); sender?.Dispose(); tray.Dispose(); };
 
-        if (settings.Enabled) StartPeer(); else SetStatus("Paused");
+        if (settings.Enabled) StartPeer(); else SetStatus(Loc.T("Paused", "已暂停"));
         Task.Run(() =>
         {
             startsAtLogin = AutoStart.IsEnabled();
@@ -88,6 +89,44 @@ public sealed partial class MainWindow : Window
         });
     }
 
+    /// Picks Chinese labels when Windows runs in Chinese; static XAML text stays English otherwise.
+    private void Localize()
+    {
+        if (!Loc.IsChinese) return;
+        ScreensHeader.Text = "屏幕";
+        ScreensHint.Text = "拖动屏幕以对应桌面布局；右键可重命名。设置由 Mac 保存。";
+        ScreensPlaceholder.Text = "连接到 Mac 后可排列屏幕。";
+        DevicesHeader.Text = "设备";
+        ConnectionHeader.Text = "连接";
+        ConnectionSub.Text = "最近一分钟，实时";
+        GeneralHeader.Text = "通用";
+        KeyboardTitle.Text = "键盘";
+        StartTitle.Text = "随 Windows 启动";
+        StartDetail.Text = "登录后在后台运行";
+        TrayTitle.Text = "在通知区域显示";
+        TrayDetail.Text = "时钟旁的图标";
+        TaskTitle.Text = "在任务栏显示";
+        TaskDetail.Text = "保留任务栏按钮；关闭窗口即最小化。两个图标都关闭时，从开始菜单打开 Unictrl。";
+        MacPosTitle.Text = "Mac 位置";
+        MacPosDetail.Text = "Mac 位于这台电脑屏幕的哪一侧";
+        HeightTitle.Text = "高度偏移";
+        PairHint.Text = "在 Mac 上点菜单栏的 Unictrl，选择“配对 Windows PC…”，然后输入它显示的代码。";
+        PairAgainButton.Content = "重新配对";
+        PairButton.Content = "配对";
+        CancelPairButton.Content = "取消";
+        CodeBox.PlaceholderText = "6 位代码";
+        if (RoleBox.Items[0] is ComboBoxItem r0) r0.Content = "Mac 共享给这台电脑";
+        if (RoleBox.Items[1] is ComboBoxItem r1) r1.Content = "这台电脑共享给 Mac";
+        if (KeyboardBox.Items[0] is ComboBoxItem k0) k0.Content = "Windows 布局";
+        if (KeyboardBox.Items[1] is ComboBoxItem k1) k1.Content = "Mac 布局";
+        if (MacSideBox.Items[0] is ComboBoxItem s0) s0.Content = "左侧";
+        if (MacSideBox.Items[1] is ComboBoxItem s1) s1.Content = "右侧";
+        foreach (var toggle in new[] { EnabledSwitch, StartAtLoginSwitch, TraySwitch, TaskbarSwitch })
+        {
+            toggle.OnContent = "开";
+            toggle.OffContent = "关";
+        }
+    }
     private CancellationTokenSource? sizeSave;
 
     /// Saves the window size a moment after the user stops resizing.
@@ -168,8 +207,9 @@ public sealed partial class MainWindow : Window
     /// keyboard has them (and where dual-labelled keyboards print the Windows names).
     private void ShowKeyboardDetail() =>
         KeyboardDetail.Text = settings.KeyboardProfile == "mac-positions"
-            ? "⌘ acts as the Windows key and ⌥ as Alt."
-            : "⌥ acts as the Windows key, ⌘ as Alt and the right ⌥ as Ctrl, as on a Windows keyboard.";
+            ? Loc.T("⌘ acts as the Windows key and ⌥ as Alt.", "⌘ 充当 Windows 键，⌥ 充当 Alt。")
+            : Loc.T("⌥ acts as the Windows key, ⌘ as Alt and the right ⌥ as Ctrl, as on a Windows keyboard.",
+                    "⌥ 充当 Windows 键，⌘ 充当 Alt，右 ⌥ 充当 Ctrl，如同 Windows 键盘。");
 
     private void Quit()
     {
@@ -188,19 +228,19 @@ public sealed partial class MainWindow : Window
         var mac = string.IsNullOrEmpty(settings.MacName) ? settings.MacAddress : settings.MacName;
         if (string.IsNullOrEmpty(settings.PairingKey))
         {
-            DetailText.Text = "Pair with your Mac to use its keyboard and mouse here.";
-            PairTitle.Text = "Not paired";
-            PairDetail.Text = "Enter the code your Mac shows";
+            DetailText.Text = Loc.T("Pair with your Mac to use its keyboard and mouse here.", "与 Mac 配对后，在这里使用它的键盘和鼠标。");
+            PairTitle.Text = Loc.T("Not paired", "未配对");
+            PairDetail.Text = Loc.T("Enter the code your Mac shows", "输入 Mac 显示的代码");
         }
         else
         {
             DetailText.Text = settings.Role == "sender"
-                ? (connected ? $"Push the pointer past this PC's screen edge to use the keyboard and mouse on {mac}."
+                ? (connected ? Loc.T($"Push the pointer past this PC's screen edge to use the keyboard and mouse on {mac}.", $"把指针推过这台电脑的屏幕边缘，即可在 {mac} 上使用键盘和鼠标。")
                     : settings.Enabled ? $"Waiting for {mac} on the local network." : "Turned off on this PC.")
-                : (connected ? $"Use the Mac's keyboard and mouse by moving the pointer across to this PC."
-                    : settings.Enabled ? $"Waiting for {mac} on the local network." : "Turned off on this PC.");
+                : (connected ? Loc.T($"Use the Mac's keyboard and mouse by moving the pointer across to this PC.", "把指针移到这台电脑，即可使用 Mac 的键盘和鼠标。")
+                    : settings.Enabled ? Loc.T($"Waiting for {mac} on the local network.", $"正在局域网中等待 {mac}…") : Loc.T("Turned off on this PC.", "已在这台电脑上关闭。"));
             PairTitle.Text = mac;
-            PairDetail.Text = string.IsNullOrEmpty(settings.MacAddress) ? "Paired" : $"Paired · {settings.MacAddress}";
+            PairDetail.Text = string.IsNullOrEmpty(settings.MacAddress) ? Loc.T("Paired", "已配对") : $"{Loc.T("Paired", "已配对")} · {settings.MacAddress}";
         }
         StatusBadge.Background = connected ? (Brush)Application.Current.Resources["PineGradientBrush"]
             : (Brush)Application.Current.Resources["ControlAltFillColorQuarternaryBrush"];
@@ -228,7 +268,7 @@ public sealed partial class MainWindow : Window
         arrangement = null;
         RenderScreens();
         ShowQuality(null);
-        if (settings.Enabled) StartPeer(); else SetStatus("Paused");
+        if (settings.Enabled) StartPeer(); else SetStatus(Loc.T("Paused", "已暂停"));
     }
 
     /// Whatever the role is, only one of these runs at a time.
@@ -244,7 +284,7 @@ public sealed partial class MainWindow : Window
     {
         if (string.IsNullOrEmpty(settings.PairingKey))
         {
-            SetStatus("Not paired yet");
+            SetStatus(Loc.T("Not paired yet", "尚未配对"));
             return;
         }
         if (settings.Role == "sender")
@@ -278,8 +318,10 @@ public sealed partial class MainWindow : Window
     {
         var senderRole = settings.Role == "sender";
         RoleDetail.Text = senderRole
-            ? "The keyboard and mouse stay on this PC; push the pointer past the screen edge to use them on the Mac."
-            : "The keyboard and mouse stay on the Mac; push the pointer past the Mac's screen edge to use them here.";
+            ? Loc.T("The keyboard and mouse stay on this PC; push the pointer past the screen edge to use them on the Mac.",
+                    "键盘和鼠标接在这台电脑上；把指针推过屏幕边缘即可在 Mac 上使用。")
+            : Loc.T("The keyboard and mouse stay on the Mac; push the pointer past the Mac's screen edge to use them here.",
+                    "键盘和鼠标接在 Mac 上；把指针推过 Mac 的屏幕边缘即可在这边使用。");
         MacSideCard.Visibility = senderRole ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -301,14 +343,14 @@ public sealed partial class MainWindow : Window
 
     private void UpdateMacOffsetText() =>
         MacOffsetText.Text = settings.MacOffsetMm == 0
-            ? "How far the Mac's centre sits below this PC's"
-            : $"{settings.MacOffsetMm:+0;-0} mm relative to this PC's centre";
+            ? Loc.T("How far the Mac's centre sits below this PC's", "Mac 中心相对这台电脑中心的高度差")
+            : Loc.T($"{settings.MacOffsetMm:+0;-0} mm relative to this PC's centre", $"相对这台电脑中心 {settings.MacOffsetMm:+0;-0} mm");
 
     private void StartReceiver(Action? onConnected = null)
     {
         if (string.IsNullOrEmpty(settings.PairingKey))
         {
-            SetStatus("Not paired yet");
+            SetStatus(Loc.T("Not paired yet", "尚未配对"));
             return;
         }
         var next = new Receiver(settings, SetStatus);
@@ -436,18 +478,19 @@ public sealed partial class MainWindow : Window
         var resources = Application.Current.Resources;
         (GradeText.Text, GradeDot.Fill) = info.Grade switch
         {
-            "smooth" => ("Smooth", (Brush)resources["SystemFillColorSuccessBrush"]),
-            "fair" => ("Some hitches", (Brush)resources["SystemFillColorCautionBrush"]),
-            "poor" => ("Choppy", (Brush)resources["SystemFillColorCriticalBrush"]),
-            _ => ("Waiting for movement", (Brush)resources["TextFillColorTertiaryBrush"]),
+            "smooth" => (Loc.T("Smooth", "流畅"), (Brush)resources["SystemFillColorSuccessBrush"]),
+            "fair" => (Loc.T("Some hitches", "偶有停顿"), (Brush)resources["SystemFillColorCautionBrush"]),
+            "poor" => (Loc.T("Choppy", "卡顿"), (Brush)resources["SystemFillColorCriticalBrush"]),
+            _ => (Loc.T("Waiting for movement", "等待指针移动"), (Brush)resources["TextFillColorTertiaryBrush"]),
         };
         RttText.Text = info.RttMs is { } rtt ? $"{rtt:F0} ms" : "";
         RttPeakText.Text = info.RttP95Ms is { } peak ? $"peak {peak:F0} ms" : "";
         var rates = info.HitchesPerMin;
         static string Rate(double value) => value == 0 ? "0" : $"{value:F1}";
         HitchText.Text = info.MovingSeconds < 3 || rates is null
-            ? "Move the pointer here for a while to measure hitches."
-            : $"Hitches per minute of movement, by where they came from: mouse {Rate(rates.Mouse)} · Mac {Rate(rates.Mac)} · network {Rate(rates.Network)} · this PC {Rate(rates.Pc)}";
+            ? Loc.T("Move the pointer here for a while to measure hitches.", "把指针移到这里一段时间以测量卡顿。")
+            : Loc.T($"Hitches per minute of movement, by where they came from: mouse {Rate(rates.Mouse)} · Mac {Rate(rates.Mac)} · network {Rate(rates.Network)} · this PC {Rate(rates.Pc)}",
+                    $"每分钟移动中的卡顿次数，按来源：鼠标 {Rate(rates.Mouse)} · Mac {Rate(rates.Mac)} · 网络 {Rate(rates.Network)} · 这台电脑 {Rate(rates.Pc)}");
         // Rebuild the list only when the Mac sent a new one, so open items stay open.
         if (!ReferenceEquals(info.Tips, shownTips))
         {
@@ -455,7 +498,8 @@ public sealed partial class MainWindow : Window
             RenderTips(info.Tips ?? []);
             var todo = (info.Tips ?? []).Count(t => t.Status == "act");
             SuggestionBadge.Visibility = todo > 0 ? Visibility.Visible : Visibility.Collapsed;
-            SuggestionText.Text = todo == 1 ? "1 suggestion" : $"{todo} suggestions";
+            SuggestionText.Text = Loc.T(todo == 1 ? "1 suggestion" : $"{todo} suggestions",
+                                        todo == 1 ? "1 条建议" : $"{todo} 条建议");
         }
     }
 
@@ -469,7 +513,7 @@ public sealed partial class MainWindow : Window
         foreach (var tip in passed) list.Children.Add(TipItem(tip));
         TipsPanel.Children.Add(new Expander
         {
-            Header = new TextBlock { Text = $"{passed.Count} checks passed", Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] },
+            Header = new TextBlock { Text = Loc.T($"{passed.Count} checks passed", $"{passed.Count} 项检查已通过"), Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] },
             Content = list, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
         });
     }
@@ -513,7 +557,8 @@ public sealed partial class MainWindow : Window
         {
             body.Children.Add(new TextBlock
             {
-                Text = tip.Status == "ok" ? "Already done. For reference:" : "How to", Style = (Style)resources["BodyStrongTextBlockStyle"],
+                Text = tip.Status == "ok" ? Loc.T("Already done. For reference:", "已达标。供参考：") : Loc.T("How to", "怎么做"),
+                Style = (Style)resources["BodyStrongTextBlockStyle"],
             });
             for (var i = 0; i < tip.Steps.Count; i++)
                 body.Children.Add(new TextBlock { Text = $"{i + 1}.  {tip.Steps[i]}", TextWrapping = TextWrapping.Wrap });
@@ -554,11 +599,11 @@ public sealed partial class MainWindow : Window
         var code = new string(CodeBox.Text.Where(char.IsDigit).ToArray());
         if (code.Length != 6)
         {
-            PairStatus.Text = "Enter the 6 digits shown on the Mac.";
+            PairStatus.Text = Loc.T("Enter the 6 digits shown on the Mac.", "输入 Mac 上显示的 6 位数字。");
             return;
         }
         PairButton.IsEnabled = false;
-        PairStatus.Text = "Looking for your Mac…";
+        PairStatus.Text = Loc.T("Looking for your Mac…", "正在寻找你的 Mac…");
         var (result, mac) = await Task.Run(() => Pair(code));
         PairButton.IsEnabled = true;
         switch (result.Outcome)
@@ -588,13 +633,13 @@ public sealed partial class MainWindow : Window
                 ShowPairing(false);
                 break;
             case PairingClient.Outcome.WrongCode:
-                PairStatus.Text = "That code didn't match. Check the code on the Mac and try again.";
+                PairStatus.Text = Loc.T("That code didn't match. Check the code on the Mac and try again.", "代码不匹配。请核对 Mac 上显示的代码后重试。");
                 break;
             case PairingClient.Outcome.NotPairing:
-                PairStatus.Text = "Your Mac isn't showing a code. On the Mac, choose Pair a Windows PC… first.";
+                PairStatus.Text = Loc.T("Your Mac isn't showing a code. On the Mac, choose Pair a Windows PC… first.", "你的 Mac 没有在显示代码。请先在 Mac 上选择“配对 Windows PC…”。");
                 break;
             default:
-                PairStatus.Text = "No Mac with Unictrl found on this network. Check that both are on the same network.";
+                PairStatus.Text = Loc.T("No Mac with Unictrl found on this network. Check that both are on the same network.", "在此网络中未发现运行 Unictrl 的 Mac。请确认两台电脑在同一网络。");
                 break;
         }
     }
@@ -743,12 +788,14 @@ public sealed partial class MainWindow : Window
     /// Asks for a new name; the Mac saves it and every screen shows it.
     private async void RenameScreen(ScreenInfo screen)
     {
-        var box = new TextBox { Text = screen.Name, PlaceholderText = "The computer's own name", MaxLength = 40 };
+        var box = new TextBox { Text = screen.Name, PlaceholderText = Loc.T("The computer's own name", "电脑自己的名称"), MaxLength = 40 };
         box.SelectAll();
         var dialog = new ContentDialog
         {
             XamlRoot = Content.XamlRoot,
-            Title = screen.IsMac ? "Rename your Mac" : screen.Id == arrangement?.You ? "Rename this PC" : $"Rename {screen.Name}",
+            Title = screen.IsMac ? Loc.T("Rename your Mac", "重命名你的 Mac")
+                : screen.Id == arrangement?.You ? Loc.T("Rename this PC", "重命名这台电脑")
+                : Loc.T($"Rename {screen.Name}", $"重命名 {screen.Name}"),
             Content = new StackPanel
             {
                 Spacing = 8,
@@ -757,13 +804,14 @@ public sealed partial class MainWindow : Window
                     box,
                     new TextBlock
                     {
-                        Text = "Shown on the Mac and on every PC. Leave empty for the computer's own name.",
+                        Text = Loc.T("Shown on the Mac and on every PC. Leave empty for the computer's own name.",
+                                     "在 Mac 和每台电脑上显示。留空则使用电脑自己的名称。"),
                         TextWrapping = TextWrapping.Wrap, Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
                     },
                 },
             },
-            PrimaryButtonText = "Rename",
-            CloseButtonText = "Cancel",
+            PrimaryButtonText = Loc.T("Rename", "重命名"),
+            CloseButtonText = Loc.T("Cancel", "取消"),
             DefaultButton = ContentDialogButton.Primary,
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;

@@ -69,7 +69,7 @@ internal sealed class Sender : IDisposable
         {
             try
             {
-                status("Connecting to your Mac…");
+                status(Loc.T("Connecting to your Mac…", "正在连接你的 Mac…"));
                 Session();
             }
             catch (Exception ex) when (!lifetime.IsCancellationRequested)
@@ -77,16 +77,16 @@ internal sealed class Sender : IDisposable
                 Log.Write("session_ended", ex.GetType().Name + ": " + ex.Message);
                 if (ex is NotPairedException)
                 {
-                    status("This Mac no longer has this PC paired. Pair again.");
+                    status(Loc.T("This Mac no longer has this PC paired. Pair again.", "此 Mac 已不与这台电脑配对，请重新配对。"));
                     lifetime.Token.WaitHandle.WaitOne(15_000);
                 }
                 else if (ex is CryptographicException)
                 {
-                    status("Not paired with this Mac. Pair again.");
+                    status(Loc.T("Not paired with this Mac. Pair again.", "尚未与此 Mac 配对，请重新配对。"));
                 }
                 else
                 {
-                    status("Looking for your Mac…");
+                    status(Loc.T("Looking for your Mac…", "正在寻找你的 Mac…"));
                     Rediscover();
                 }
             }
@@ -169,7 +169,7 @@ internal sealed class Sender : IDisposable
                 reader.U8(); // platform
                 var name = reader.Utf8Rest();
                 Log.Write("connected", $"peer={name}");
-                status($"Connected to {name} · sharing this PC's keyboard and mouse");
+                status(Loc.T($"Connected to {name} · sharing this PC's keyboard and mouse", $"已连接到 {name} · 正在共享这台电脑的键盘和鼠标"));
                 Online = true;
                 send = Send;
                 pongAt = DateTime.UtcNow;
