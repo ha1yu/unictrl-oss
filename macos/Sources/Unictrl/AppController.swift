@@ -1025,23 +1025,23 @@ import ServiceManagement
             injectorPeer = id
             injector.enter(yMm: yMm, fromRight: fromRight, leftOpen: flags8 & 2 != 0,
                            rightOpen: flags8 & 4 != 0, resume: flags8 & 1 != 0)
-        case .move where isReceiver:
+        case .move where isReceiver && injectorPeer == id:
             guard let dx = reader.f32(), let dy = reader.f32() else { break }
             injector.move(dxMm: dx, dyMm: dy)
-        case .moveRaw where isReceiver:
+        case .moveRaw where isReceiver && injectorPeer == id:
             guard let dx = reader.f32(), let dy = reader.f32() else { break }
             injector.moveRaw(dx: dx, dy: dy)
-        case .button where isReceiver:
+        case .button where isReceiver && injectorPeer == id:
             if let button = reader.u8(), let down = reader.u8() {
                 injector.button(button, down: down != 0)
             }
-        case .wheel where isReceiver:
+        case .wheel where isReceiver && injectorPeer == id:
             guard let dy = reader.f32(), let dx = reader.f32() else { break }
             injector.wheel(dyLines: dy, dxLines: dx)
-        case .key where isReceiver:
+        case .key where isReceiver && injectorPeer == id:
             guard let page = reader.u8(), let usage = reader.u16(), let down = reader.u8() else { break }
             injector.key(page: page, usage: usage, down: down != 0)
-        case .action where isReceiver:
+        case .action where isReceiver && injectorPeer == id:
             if let action = reader.u8(), let performed = KeyAction(rawValue: action) {
                 performed.performOnMac()
             }

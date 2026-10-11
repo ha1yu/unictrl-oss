@@ -25,6 +25,7 @@ internal sealed class SenderCapture : IDisposable
     private Native.WndProc? windowProc;
     private nint hwnd, mouseHook, keyboardHook;
     private volatile bool remote;
+    private bool panicCtrl, panicShift;
     private DateTime suppressUntil = DateTime.MinValue;
     private Native.Point lastPt;
     /// The monitor the (clipped) cursor sits on, cached on entering the remote state so the hook
@@ -152,6 +153,19 @@ internal sealed class SenderCapture : IDisposable
         if ((key.Flags & Native.LlInjected) != 0) return Native.CallNextHookEx(keyboardHook, code, wParam, lParam);
         var message = (uint)wParam;
         var down = message == WmKeyDown || message == WmSysKeyDown;
+        // Escape hatch: the pointer is trapped on the receiver (it cannot leave, Unictrl is stuck),
+        // so a chord the hook always answers brings it home. Everything real is still swallowed.
+        if (KeyTable.TryGetUsage((ushort)key.ScanCode, (key.Flags & Native.LlExtended) != 0, key.VirtualKey,
+                out var panicPage, out var panicUsage))
+        {
+            if (panicPage == 0x07 && panicUsage is 0xE0 or 0xE4) panicCtrl = down;
+            else if (panicPage == 0x07 && panicUsage is 0xE1 or 0xE5) panicShift = down;
+            else if (panicPage == 0x07 && panicUsage == 0x14 && down && panicCtrl && panicShift)
+            {
+                ForceReturn("panic");
+                return 1;
+            }
+        }
         if (KeyTable.TryGetUsage((ushort)key.ScanCode, (key.Flags & Native.LlExtended) != 0, key.VirtualKey,
                 out var page, out var usage))
         {
@@ -187,6 +201,7 @@ internal sealed class SenderCapture : IDisposable
     private void EnterRemote(in Native.MsLlHookStruct data, SenderCore.Screen screen)
     {
         remote = true;
+        panicCtrl = panicShift = false;
         var clip = new Native.Rect32 { Left = screen.Left, Top = screen.Top, Right = screen.Right, Bottom = screen.Bottom };
         Native.ClipCursor(ref clip); // the cursor stays on this screen while it is logically away
         CursorHider.Hide();
@@ -250,6 +265,7 @@ internal sealed class SenderCapture : IDisposable
     {
         if (!remote) return;
         remote = false;
+        panicCtrl = panicShift = false;
         Native.ClipCursorReset();
         var monitor = Native.GetCursorPos(out var at) ? Displays.At(at.X, at.Y) : Displays.Primary();
         var spot = SenderCore.ReturnSpot(ToScreen(monitor), settings.MacSide != "left", yMm, settings.MacOffsetMm);

@@ -35,6 +35,11 @@ final class InputInjector {
     private var pointsPerMm = 5.0
     private var x = 0.0, y = 0.0
     private var openLeft = false, openRight = false
+    /// Which edge the pointer came in through, and whether that edge may push us out yet: the hand
+    /// is still pushing when it crosses, so the entry edge only re-arms once the pointer has moved
+    /// well inward. Without this the pointer bounces straight back out.
+    private var entryEdgeIsRight = true
+    private var entryArmed = false
     private var suppressEdgeUntil = Date.distantPast
     private var flags: CGEventFlags = []
     private var heldKeys: Set<UInt16> = []
@@ -81,10 +86,13 @@ final class InputInjector {
         if resume, let here = CGEvent(source: nil)?.location, screen.contains(here) {
             x = here.x
             y = here.y
+            entryArmed = true
         } else {
             x = fromRight ? screen.maxX - 2 : screen.minX + 2
             y = InjectGeometry.entryY(yMm: Double(yMm), screen: screen, pointsPerMm: pointsPerMm)
+            entryArmed = false
         }
+        entryEdgeIsRight = fromRight
         heldKeys = []
         heldButtons = [false, false, false, false, false]
         flags = []
@@ -150,7 +158,12 @@ final class InputInjector {
         y += dy
         x = x.clamped(to: screen.minX...screen.maxX - 1)
         y = y.clamped(to: screen.minY...screen.maxY - 1)
-        if Date() >= suppressEdgeUntil {
+        if !entryArmed {
+            // Armed once the pointer has moved 5 mm inward from the edge it came in through.
+            let inward = entryEdgeIsRight ? screen.maxX - x : x - screen.minX
+            if inward > 5 * pointsPerMm { entryArmed = true }
+        }
+        if Date() >= suppressEdgeUntil, entryArmed {
             if openRight, x >= screen.maxX - 1 { exitEdge(right: true); return }
             if openLeft, x <= screen.minX { exitEdge(right: false); return }
         }
