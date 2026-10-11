@@ -157,6 +157,62 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE7C1;" Style="{StaticResource CardIconStyle}" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Direction" />
+                                <TextBlock x:Name="RoleDetail" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <ComboBox x:Name="RoleBox" Grid.Column="2" MinWidth="220" VerticalAlignment="Center"
+                                      SelectionChanged="OnRoleChanged">
+                                <ComboBoxItem Tag="receiver" Content="Mac shares with this PC" />
+                                <ComboBoxItem Tag="sender" Content="This PC shares with the Mac" />
+                            </ComboBox>
+                        </Grid>
+                    </Border>
+                    <!-- Where the Mac sits, in the sender role. -->
+                    <Border x:Name="MacSideCard" Style="{StaticResource CardStyle}" Padding="16,4" Visibility="Collapsed">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <FontIcon Glyph="&#xE7F4;" Style="{StaticResource CardIconStyle}" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,8">
+                                <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Mac position" />
+                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="Which side of this PC's screen the Mac sits on" />
+                            </StackPanel>
+                            <ComboBox x:Name="MacSideBox" Grid.Column="2" Grid.Row="0" MinWidth="140" VerticalAlignment="Center"
+                                      SelectionChanged="OnMacSideChanged">
+                                <ComboBoxItem Tag="left" Content="Left" />
+                                <ComboBoxItem Tag="right" Content="Right" />
+                            </ComboBox>
+                            <Rectangle Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Height="1"
+                                       Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
+                            <StackPanel Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Margin="0,8">
+                                <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Height offset" />
+                                <TextBlock x:Name="MacOffsetText" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="How far the Mac's centre sits below this PC's" />
+                            </StackPanel>
+                            <Slider x:Name="MacOffsetSlider" Grid.Row="1" Grid.Column="2" Width="180" VerticalAlignment="Center"
+                                    Minimum="-150" Maximum="150" StepFrequency="5" ValueChanged="OnMacOffsetChanged" />
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource CardStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
                             <FontIcon Glyph="&#xE765;" Style="{StaticResource CardIconStyle}" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Keyboard" />

@@ -17,14 +17,14 @@ internal static class SenderCore
     public readonly record struct Entry(float YMm, byte Edge, bool LeftOpen, bool RightOpen);
 
     /// Whether `at` is on `screen`'s `right` (else left) edge, with no other screen just beyond it
-    /// (an edge between two local monitors is not a way out).
-    public static bool AtOuterEdge(Spot at, Screen screen, bool right, IReadOnlyList<Screen> screens)
+    /// (an edge between two local monitors is not a way out). `screenExistsBeyond` answers whether
+    /// any local screen covers a point.
+    public static bool AtOuterEdge(Spot at, Screen screen, bool right, Func<int, int, bool> screenExistsBeyond)
     {
         if (at.Y < screen.Top || at.Y >= screen.Bottom) return false;
         var x = right ? screen.Right : screen.Left;
         if (Math.Abs(at.X - x) > 2) return false;
-        return !screens.Any(s => s != screen && s.Top < at.Y && s.Bottom > at.Y &&
-            (right ? s.Left < x + 2 && s.Right > x : s.Left < x && s.Right > x - 2));
+        return !screenExistsBeyond(right ? x : x - 1, at.Y);
     }
 
     /// The `enter` to send when the pointer has been pushed far enough past an open outer edge.

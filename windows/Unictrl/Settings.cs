@@ -8,6 +8,15 @@ public sealed class Settings
     /// "receiver" (default): this PC receives the Mac's keyboard and mouse. "sender": this PC's input
     /// is shared with the Mac. The transport is the same either way; the input messages flip direction.
     public string Role { get; set; } = "receiver";
+    /// Sender role: which side of this PC's screens the Mac sits on.
+    public string MacSide { get; set; } = "right";
+    /// Sender role: how far the Mac's screen centre sits below this PC's, in mm.
+    public double MacOffsetMm { get; set; }
+    /// Sender role: "physical" (default) sends millimetres; "native" sends raw counts with a scale.
+    /// A Mac cannot run its pointer ballistics on injected input, so physical is the honest mode.
+    public string MacPointerMode { get; set; } = "physical";
+    /// Sender role: multiplies what is sent to the Mac.
+    public double MacPointerScale { get; set; } = 1.0;
     /// Last address the Mac was found at; refreshed by discovery when it stops answering there.
     public string MacAddress { get; set; } = "";
     /// The paired Mac's device ID, to pick it out when several Macs answer discovery.

@@ -95,11 +95,15 @@ public class SenderCoreTests
     [Fact]
     public void OuterEdgesHaveNoScreenBeyond()
     {
-        var monitors = new[] { Pc, new SenderCore.Screen(1920, 0, 3840, 1080, Pc.PixelsPerMm) };
-        Assert.True(SenderCore.AtOuterEdge(new(0, 500), Pc, false, monitors));   // far left of the row
-        Assert.True(SenderCore.AtOuterEdge(new(3839, 500), monitors[1], true, monitors));
-        Assert.False(SenderCore.AtOuterEdge(new(1918, 500), Pc, true, monitors)); // a monitor continues here
-        Assert.False(SenderCore.AtOuterEdge(new(900, 500), Pc, true, monitors));  // mid-screen
-        Assert.False(SenderCore.AtOuterEdge(new(0, 1100), Pc, false, monitors));  // off the screen vertically
+        var monitors = new List<SenderCore.Screen> { Pc, new(1920, 0, 3840, 1080, Pc.PixelsPerMm) };
+        bool Exists(SenderCore.Screen within, int x, int y) => monitors.Any(m => x >= m.Left && x < m.Right && y >= m.Top && y < m.Bottom);
+        bool Edge(SenderCore.Spot at, SenderCore.Screen screen, bool right) =>
+            SenderCore.AtOuterEdge(at, screen, right, (px, py) => Exists(screen, px, py));
+
+        Assert.True(Edge(new(0, 500), Pc, false));                    // far left of the row
+        Assert.True(Edge(new(3839, 500), monitors[1], true));         // far right of the row
+        Assert.False(Edge(new(1918, 500), Pc, true));                 // a monitor continues here
+        Assert.False(Edge(new(900, 500), Pc, true));                  // mid-screen
+        Assert.False(Edge(new(0, 1100), Pc, false));                  // off the screen vertically
     }
 }
