@@ -23,10 +23,10 @@ extension QualityReport.Grade {
 extension HitchSource {
     var label: String {
         switch self {
-        case .mouse: "Mouse"
-        case .mac: "This Mac"
-        case .network: "Network"
-        case .pc: "PC"
+        case .mouse: NSLocalizedString("Mouse", comment: "hitch source")
+        case .mac: NSLocalizedString("This Mac", comment: "hitch source")
+        case .network: NSLocalizedString("Network", comment: "hitch source")
+        case .pc: NSLocalizedString("PC", comment: "hitch source")
         }
     }
 
@@ -56,7 +56,7 @@ struct QualitySection: View {
                     QualityCard(quality: quality, device: device, report: report)
                     DisclosureGroup(isExpanded: $detailsOpen) {
                         HitchBreakdown(device: device, report: report)
-                        TipsList(tips: report?.tips ?? [])
+                        TipsList(tips: report?.tips ?? [], pcName: device.name)
                     } label: {
                         DetailsLabel(tips: report?.tips ?? [])
                     }
@@ -89,17 +89,17 @@ private struct QualityCard: View {
                 Spacer()
                 if let rtt = report?.rttMs {
                     Text(String(format: "%.0f ms", rtt)).font(.headline).monospacedDigit()
-                        .help("Round trip to the PC and back. One way is about half.")
+                        .help(NSLocalizedString("Round trip to the PC and back. One way is about half.", comment: ""))
                     if let p95 = report?.rttP95Ms {
-                        Text(String(format: "peak %.0f ms", p95)).font(.caption).foregroundStyle(.secondary).monospacedDigit()
-                            .help("95 % of round trips in the last minute were this fast or faster.")
+                        Text(String(format: NSLocalizedString("peak %.0f ms", comment: ""), p95)).font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                            .help(NSLocalizedString("95 % of round trips in the last minute were this fast or faster.", comment: ""))
                     }
                 }
             }
             let history = quality.history(device.id)
             Sparkline(rtt: history.rtt, hitches: history.hitches)
                 .frame(height: 48)
-                .help("Round trip over the last minute; marks along the bottom are hitches, coloured by where they came from.")
+                .help(NSLocalizedString("Round trip over the last minute; marks along the bottom are hitches, coloured by where they came from.", comment: ""))
         }
         .padding(.vertical, 4)
     }
@@ -114,7 +114,7 @@ private struct DetailsLabel: View {
         HStack(spacing: 8) {
             Text("Details and tips")
             if todo > 0 {
-                Text(todo == 1 ? "1 suggestion" : "\(todo) suggestions")
+                Text(String(format: NSLocalizedString(todo == 1 ? "1 suggestion" : "%lld suggestions", comment: ""), todo))
                     .font(.caption.weight(.semibold)).foregroundStyle(.orange)
                     .padding(.horizontal, 7).padding(.vertical, 2)
                     .background(Capsule().fill(Color.orange.opacity(0.14)))
@@ -143,8 +143,8 @@ private struct HitchBreakdown: View {
                 Spacer(minLength: 0)
             }
             Text((report?.movingSeconds ?? 0) < 3
-                 ? "Move the pointer on \(device.name) for a while to measure hitches."
-                 : "Hitches per minute of movement, by where they came from.")
+                 ? String(format: NSLocalizedString("Move the pointer on %@ for a while to measure hitches.", comment: ""), device.name)
+                 : NSLocalizedString("Hitches per minute of movement, by where they came from.", comment: ""))
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
@@ -152,15 +152,15 @@ private struct HitchBreakdown: View {
     private func rate(_ source: HitchSource) -> String {
         guard let report, report.movingSeconds > 0 else { return "–" }
         let value = report.hitchesPerMin[source]
-        return value == 0 ? "0" : String(format: "%.1f/min", value)
+        return value == 0 ? "0" : String(format: NSLocalizedString("%.1f/min", comment: ""), value)
     }
 
     private func help(_ source: HitchSource) -> String {
         switch source {
-        case .mouse: "Hitches per minute of movement where the mouse’s radio link paused."
-        case .mac: "Hitches where this Mac handed mouse events to Unictrl late because it was busy."
-        case .network: "Hitches where moves reached the PC late: Wi‑Fi, the router, or either computer’s network."
-        case .pc: "Hitches where \(device.name) took long to apply a move."
+        case .mouse: NSLocalizedString("Hitches per minute of movement where the mouse's radio link paused.", comment: "")
+        case .mac: NSLocalizedString("Hitches where this Mac handed mouse events to Unictrl late because it was busy.", comment: "")
+        case .network: NSLocalizedString("Hitches where moves reached the PC late: Wi‑Fi, the router, or either computer's network.", comment: "")
+        case .pc: String(format: NSLocalizedString("Hitches where %@ took long to apply a move.", comment: ""), device.name)
         }
     }
 }
@@ -221,14 +221,15 @@ private struct Sparkline: View {
 /// The checklist: things to do first, open; what is already fine folded away.
 private struct TipsList: View {
     let tips: [Tip]
+    let pcName: String
 
     var body: some View {
         let todo = tips.filter { $0.status != .ok }
         let fine = tips.filter { $0.status == .ok }
-        ForEach(todo) { TipRow(tip: $0) }
+        ForEach(todo) { TipRow(tip: $0.localized(pc: pcName)) }
         if !fine.isEmpty {
             DisclosureGroup {
-                ForEach(fine) { TipRow(tip: $0) }
+                ForEach(fine) { TipRow(tip: $0.localized(pc: pcName)) }
             } label: {
                 Label(String(format: NSLocalizedString("%lld checks passed", comment: ""), fine.count), systemImage: "checkmark.circle.fill")
                     .foregroundStyle(.secondary)
@@ -289,9 +290,10 @@ private struct TipDetail: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(.quaternary.opacity(0.5)))
             }
-            if !(tip.steps.count == 1 && tip.steps[0] == "Nothing to do.") {
+            if !(tip.steps.count == 1 && (tip.steps[0] == "Nothing to do." || tip.steps[0] == "没什么要做的。")) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(tip.status == .ok ? "Already done. For reference:" : "How to").font(.subheadline.weight(.semibold))
+                    Text(tip.status == .ok ? NSLocalizedString("Already done. For reference:", comment: "") : NSLocalizedString("How to", comment: ""))
+                        .font(.subheadline.weight(.semibold))
                     ForEach(Array(tip.steps.enumerated()), id: \.offset) { i, step in
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
                             Text("\(i + 1).").monospacedDigit().foregroundStyle(.secondary)

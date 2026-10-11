@@ -8,8 +8,9 @@ public sealed class Settings
     /// "receiver" (default): this PC receives the Mac's keyboard and mouse. "sender": this PC's input
     /// is shared with the Mac. The transport is the same either way; the input messages flip direction.
     public string Role { get; set; } = "receiver";
-    /// Sender role: which side of this PC's screens the Mac sits on.
-    public string MacSide { get; set; } = "right";
+    /// Sender role: which side of this PC's screens the Mac sits on. The common desk (PC on the
+    /// Mac's right) has the Mac on this PC's LEFT, so that is the default.
+    public string MacSide { get; set; } = "left";
     /// Sender role: how far the Mac's screen centre sits below this PC's, in mm.
     public double MacOffsetMm { get; set; }
     /// Sender role: "physical" (default) sends millimetres; "native" sends raw counts with a scale.

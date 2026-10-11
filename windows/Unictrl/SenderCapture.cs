@@ -172,6 +172,7 @@ internal sealed class SenderCapture : IDisposable
         if (!SenderCore.AtOuterEdge(new(data.Pt.X, data.Pt.Y), screen, macOnRight, Displays.Exists))
         {
             push.Reset();
+            rawDx = rawDy = 0; // counts mean nothing once the hand moved elsewhere
             return;
         }
         var outward = macOnRight ? rawDx : -rawDx;

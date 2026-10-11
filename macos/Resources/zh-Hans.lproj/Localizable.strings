@@ -99,3 +99,24 @@
 "Rename %@" = "重命名 %@";
 "%lld checks passed" = "%lld 项检查已通过";
 "Shares only while the keyboard is on this channel; on others each computer keeps its own." = "仅当键盘在此通道上时共享；切到其他通道时各电脑独立使用。";
+
+/* 连接质量 · 图例与明细 */
+"Mouse" = "鼠标";
+"This Mac" = "这台 Mac";
+"Network" = "网络";
+"PC" = "PC";
+"1 suggestion" = "1 条建议";
+"%lld suggestions" = "%lld 条建议";
+"peak %.0f ms" = "峰值 %.0f ms";
+"%.1f/min" = "%.1f/分";
+"Round trip to the PC and back. One way is about half." = "到 PC 的往返耗时。单程约为其一半。";
+"95 % of round trips in the last minute were this fast or faster." = "最近一分钟的往返有 95 % 不慢于这个值。";
+"Round trip over the last minute; marks along the bottom are hitches, coloured by where they came from." = "最近一分钟的往返；底部刻度是卡顿，按来源着色。";
+"Move the pointer on %@ for a while to measure hitches." = "在 %@ 上移动指针一段时间以测量卡顿。";
+"Hitches per minute of movement, by where they came from." = "每分钟移动中的卡顿次数，按来源划分。";
+"Hitches per minute of movement where the mouse's radio link paused." = "因鼠标无线链路停顿造成的每分钟卡顿。";
+"Hitches where this Mac handed mouse events to Unictrl late because it was busy." = "因这台 Mac 忙碌而晚递交鼠标事件造成的卡顿。";
+"Hitches where moves reached the PC late: Wi‑Fi, the router, or either computer's network." = "移动事件晚到达 PC 的卡顿：Wi‑Fi、路由器或任一电脑的网络。";
+"Hitches where %@ took long to apply a move." = "%@ 应用移动事件耗时过长造成的卡顿。";
+"How to" = "怎么做";
+"Already done. For reference:" = "已达标。供参考：";
