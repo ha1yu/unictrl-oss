@@ -1,0 +1,67 @@
+# Builds both apps on every push (and on demand) and uploads them as artifacts.
+# The Mac app is ad-hoc signed (UNICTRL_SIGNING_IDENTITY=-): it runs locally, but Gatekeeper
+# will ask once because it is not signed with a developer certificate.
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  macos:
+    name: macOS app
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          ls /Applications/Xcode*.app || true
+          xcodebuild -version
+          swift --version
+
+      - name: Run tests
+        working-directory: macos
+        run: swift test
+
+      - name: Build Unictrl.app
+        env:
+          UNICTRL_SIGNING_IDENTITY: '-'
+        run: macos/build-app.sh
+
+      - name: Zip app bundle
+        run: |
+          cd "$HOME/Applications"
+          ditto -c -k --keepParent Unictrl.app "$GITHUB_WORKSPACE/Unictrl-macOS.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unictrl-macOS
+          path: Unictrl-macOS.zip
+          if-no-files-found: error
+
+  windows:
+    name: Windows app (x64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Run tests
+        run: dotnet test windows/Unictrl.Tests/Unictrl.Tests.csproj --nologo -v q
+
+      - name: Publish
+        run: dotnet publish windows/Unictrl/Unictrl.csproj -c Release -p:Platform=x64 -o publish/Unictrl
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unictrl-Windows-x64
+          path: publish/Unictrl
+          if-no-files-found: error
