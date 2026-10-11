@@ -162,6 +162,36 @@ internal static partial class Native
         public uint ExtraInformation;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RawKeyboard
+    {
+        public ushort MakeCode, Flags, Reserved, VKey, Message;
+        public uint ExtraInformation;
+    }
+
+    /// A screen the low-level hooks report positions against. `Pt` is post-acceleration; `MouseData`
+    /// carries the wheel delta in its high word and X-button numbers in the low word of the high word.
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MsLlHookStruct
+    {
+        public Point Pt;
+        public uint MouseData, Flags, Time;
+        public nint ExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct KbdLlHookStruct
+    {
+        public uint VirtualKey, ScanCode, Flags, Time;
+        public nint ExtraInfo;
+    }
+
+    public delegate nint HookProc(int code, nint wParam, nint lParam);
+
+    public const int WhKeyboardLl = 13, WhMouseLl = 14;
+    /// KBDLLHOOKSTRUCT / MSLLHOOKSTRUCT flags.
+    public const uint LlExtended = 0x01, LlInjected = 0x10, LlKeyUp = 0x80;
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern ushort RegisterClassW(ref WndClass wc);
 
@@ -224,4 +254,31 @@ internal static partial class Native
 
     [LibraryImport("shcore.dll")]
     public static partial int GetDpiForMonitor(nint monitor, int type, out uint dpiX, out uint dpiY);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern nint SetWindowsHookExW(int hook, HookProc proc, nint module, uint thread);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool UnhookWindowsHookEx(nint hook);
+
+    [DllImport("user32.dll")]
+    public static extern nint CallNextHookEx(nint hook, int code, nint wParam, nint lParam);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    public static extern nint GetModuleHandleW(string? moduleName);
+
+    /// Traps the cursor inside `rect` while the pointer is logically on the receiver.
+    [DllImport("user32.dll", EntryPoint = "ClipCursor")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool ClipCursor(ref Rect32 rect);
+
+    [DllImport("user32.dll", EntryPoint = "ClipCursor")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool ClipCursorReset();
+
+    /// Puts the cursor back at the edge height the receiver reported on `leave`.
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetCursorPos(int x, int y);
 }

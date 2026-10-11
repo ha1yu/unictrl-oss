@@ -57,6 +57,22 @@ struct MessageReader {
         return data[offset - 1]
     }
 
+    mutating func u16() -> UInt16? {
+        guard offset + 2 <= data.endIndex else { return nil }
+        var value: UInt16 = 0
+        for i in 0..<2 { value |= UInt16(data[offset + i]) << (8 * UInt16(i)) }
+        offset += 2
+        return value
+    }
+
+    mutating func u32() -> UInt32? {
+        guard offset + 4 <= data.endIndex else { return nil }
+        var value: UInt32 = 0
+        for i in 0..<4 { value |= UInt32(data[offset + i]) << (8 * UInt32(i)) }
+        offset += 4
+        return value
+    }
+
     mutating func f32() -> Float? {
         guard offset + 4 <= data.endIndex else { return nil }
         var bits: UInt32 = 0

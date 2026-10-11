@@ -12,6 +12,8 @@
     <Compile Include="..\Unictrl\Arrangement.cs" Link="Linked\Arrangement.cs" />
     <Compile Include="..\Unictrl\KeyTable.cs" Link="Linked\KeyTable.cs" />
     <Compile Include="..\Unictrl\LinkQuality.cs" Link="Linked\LinkQuality.cs" />
+    <Compile Include="..\Unictrl\Wire.cs" Link="Linked\Wire.cs" />
+    <Compile Include="..\Unictrl\SenderCore.cs" Link="Linked\SenderCore.cs" />
     <None Include="..\..\tests\contract\*.json" LinkBase="contract" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>

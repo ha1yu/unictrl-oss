@@ -1,8 +1,14 @@
 # Unictrl wire protocol v2
 
-TCP port 24860. The computer the keyboard and mouse are connected to (the **sender**, today the Mac)
-listens; each **receiver** (a Windows PC) connects out, so Windows needs no inbound firewall rule.
-`TCP_NODELAY` on both ends. The Mac holds one session per paired PC, keyed by the PC's device ID.
+TCP port 24860. The **listener** is the computer the others pair towards; today that is always the
+Mac, and each Windows PC connects out, so Windows needs no inbound firewall rule. `TCP_NODELAY` on
+both ends. The Mac holds one session per paired PC, keyed by the PC's device ID.
+
+The input direction is independent of the transport. The computer the keyboard and mouse are
+connected to is the **sender**; the others are **receivers**. Originally the sender was always the
+Mac (the listener). A Windows PC can also be the sender: it connects out and pairs exactly as a
+receiver does, and the input messages below flow the other way over the same session. Message
+directions in this document are labelled by input role, never by platform.
 
 ## Several PCs
 
@@ -48,8 +54,9 @@ Plaintext = `u8 type` ‖ payload, little-endian.
 | 0x12 | move | sender → receiver | `f32 dxMm, f32 dyMm`, then `u32 sentUs`: the sender's monotonic clock in µs (wrapping), so the receiver can see moves that arrived late. Older receivers ignore the extra bytes |
 | 0x16 | moveRaw | sender → receiver | `f32 dx, f32 dy, u32 sentUs`: unaccelerated device counts (`pointerMode` = `native`, the default) |
 | 0x13 | button | sender → receiver | `u8 button` (0 left, 1 right, 2 middle, 3 back, 4 forward), `u8 down` |
-| 0x14 | wheel | sender → receiver | `f32 dyLines` (+ = content up), `f32 dxLines`; receiver multiplies by 120 |
-| 0x15 | key | sender → receiver | `u8 usagePage` (0x07 keyboard, 0x0C consumer), `u16 usage`, `u8 down`. Caps Lock (0x07/0x39) is a state, not a press: `down` = the Mac's lock state, also sent right after each `enter`; the receiver switches only if it differs |
+| 0x14 | wheel | sender → receiver | `f32 dyLines` (+ = content up), `f32 dxLines`; the receiver converts them to its own scroll units (120 per notch on Windows) |
+| 0x15 | key | sender → receiver | `u8 usagePage` (0x07 keyboard, 0x0C consumer), `u16 usage`, `u8 down`. Caps Lock (0x07/0x39) is a state, not a press: `down` = the sender's lock state, also sent right after each `enter`; the receiver switches only if it differs |
+| 0x17 | action | sender → receiver | `u8 KeyAction`: a special key's function, performed by the receiver (1 task view/apps switcher, 2 apps/start, 3 show desktop, 4 screenshot, 5 lock the computer) |
 | 0x20 | ping | sender → receiver | `u64` sender clock |
 | 0x21 | pong | receiver → sender | the same `u64` |
 | 0x22 | stats | v2 receiver → sender | JSON, about once a second while moves arrive and every 10 s with the environment: `moves`, `hitches` (moves 20 ms or more later than the lowest one-way delay of the last 30 s, counted once per spike), `jitterMaxMs`, `jitterP95Ms`, `slowInjects` (moves that took 8 ms or more to apply), `injectMaxMs`; and when known `link` (`wifi`, `ethernet`, `other`), `linkMbps`, `signalBars` (0–5), `onBattery`, `batterySaver`, `powerMode` (`efficiency`, `balanced`, `performance`). See `tests/contract/pc-stats.json` |

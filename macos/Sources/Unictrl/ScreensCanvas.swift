@@ -155,11 +155,11 @@ struct ScreensCanvas: View {
             for side in [Side.left, .right] {
                 guard let neighbor = result.neighbor(of: id, on: side) else { continue }
                 let theirs = result.offset(of: neighbor)
-                let limit = max(0, (height + (sizes[neighbor]?.height ?? 190)) / 2 - ScreensCanvas.minOverlapMm)
+                let limit = max(0, (height + (sizes[neighbor]?.height ?? 190)) / 2 as Double - ScreensCanvas.minOverlapMm)
                 offset = min(theirs + limit, max(theirs - limit, offset))
                 if abs(offset - theirs) < 6 { offset = theirs } // snap to centred
             }
-            result.offsets[id] = (offset * 10).rounded() / 10
+            result.offsets[id] = (offset * 10).rounded() / 10 as Double
             return result
         }
     }

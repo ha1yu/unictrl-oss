@@ -2,6 +2,7 @@ using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -15,6 +16,7 @@ public sealed partial class MainWindow : Window
     private readonly Settings settings = Settings.Load();
     private readonly Tray tray;
     private Receiver? receiver;
+    private Sender? sender;
     private bool quitting;
     private bool startsAtLogin;
     private bool connected;
@@ -43,6 +45,11 @@ public sealed partial class MainWindow : Window
         EnabledSwitch.IsOn = settings.Enabled;
         KeyboardBox.SelectedIndex = settings.KeyboardProfile == "mac-positions" ? 1 : 0;
         ShowKeyboardDetail();
+        RoleBox.SelectedIndex = settings.Role == "sender" ? 1 : 0;
+        ShowRoleDetail();
+        MacSideBox.SelectedIndex = settings.MacSide == "left" ? 0 : 1;
+        MacOffsetSlider.Value = settings.MacOffsetMm;
+        UpdateMacOffsetText();
         RestoreDetails();
         StartAtLoginSwitch.IsOn = settings.StartAtLogin;
         AboutText.Text = $"Unictrl {typeof(App).Assembly.GetName().Version?.ToString(3)} · This PC: {Environment.MachineName}";
@@ -70,9 +77,9 @@ public sealed partial class MainWindow : Window
             if (settings.ShowInTaskbar && AppWindow.Presenter is OverlappedPresenter overlapped) overlapped.Minimize();
             else AppWindow.Hide();
         };
-        Closed += (_, _) => { receiver?.Dispose(); tray.Dispose(); };
+        Closed += (_, _) => { receiver?.Dispose(); sender?.Dispose(); tray.Dispose(); };
 
-        if (settings.Enabled) StartReceiver(); else SetStatus("Paused");
+        if (settings.Enabled) StartPeer(); else SetStatus("Paused");
         Task.Run(() =>
         {
             startsAtLogin = AutoStart.IsEnabled();
@@ -169,6 +176,7 @@ public sealed partial class MainWindow : Window
         quitting = true;
         CursorHider.Show("quit");
         receiver?.Dispose();
+        sender?.Dispose();
         tray.Dispose();
         Application.Current.Exit();
     }
@@ -186,8 +194,11 @@ public sealed partial class MainWindow : Window
         }
         else
         {
-            DetailText.Text = connected ? $"Use the Mac's keyboard and mouse by moving the pointer across to this PC."
-                : settings.Enabled ? $"Waiting for {mac} on the local network." : "Turned off on this PC.";
+            DetailText.Text = settings.Role == "sender"
+                ? (connected ? $"Push the pointer past this PC's screen edge to use the keyboard and mouse on {mac}."
+                    : settings.Enabled ? $"Waiting for {mac} on the local network." : "Turned off on this PC.")
+                : (connected ? $"Use the Mac's keyboard and mouse by moving the pointer across to this PC."
+                    : settings.Enabled ? $"Waiting for {mac} on the local network." : "Turned off on this PC.");
             PairTitle.Text = mac;
             PairDetail.Text = string.IsNullOrEmpty(settings.MacAddress) ? "Paired" : $"Paired · {settings.MacAddress}";
         }
@@ -213,13 +224,85 @@ public sealed partial class MainWindow : Window
         if (settings.Enabled == EnabledSwitch.IsOn) return;
         settings.Enabled = EnabledSwitch.IsOn;
         settings.Save();
-        receiver?.Dispose();
-        receiver = null;
+        StopPeer();
         arrangement = null;
         RenderScreens();
         ShowQuality(null);
-        if (settings.Enabled) StartReceiver(); else SetStatus("Paused");
+        if (settings.Enabled) StartPeer(); else SetStatus("Paused");
     }
+
+    /// Whatever the role is, only one of these runs at a time.
+    private void StopPeer()
+    {
+        receiver?.Dispose();
+        receiver = null;
+        sender?.Dispose();
+        sender = null;
+    }
+
+    private void StartPeer(Action? onConnected = null)
+    {
+        if (string.IsNullOrEmpty(settings.PairingKey))
+        {
+            SetStatus("Not paired yet");
+            return;
+        }
+        if (settings.Role == "sender")
+        {
+            var next = new Sender(settings, SetStatus);
+            if (onConnected is not null) next.Connected += onConnected;
+            sender = next;
+            next.Start();
+        }
+        else
+        {
+            StartReceiver(onConnected);
+        }
+    }
+
+    private void OnRoleChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (RoleBox.SelectedItem is not ComboBoxItem { Tag: string role } || role == settings.Role) return;
+        settings.Role = role;
+        settings.Save();
+        ShowRoleDetail();
+        StopPeer();
+        arrangement = null;
+        RenderScreens();
+        ShowQuality(null);
+        if (settings.Enabled) StartPeer();
+        Log.Write("role", role);
+    }
+
+    private void ShowRoleDetail()
+    {
+        var senderRole = settings.Role == "sender";
+        RoleDetail.Text = senderRole
+            ? "The keyboard and mouse stay on this PC; push the pointer past the screen edge to use them on the Mac."
+            : "The keyboard and mouse stay on the Mac; push the pointer past the Mac's screen edge to use them here.";
+        MacSideCard.Visibility = senderRole ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void OnMacSideChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (MacSideBox.SelectedItem is not ComboBoxItem { Tag: string side } || side == settings.MacSide) return;
+        settings.MacSide = side; // read by the capture thread for each crossing
+        settings.Save();
+        Log.Write("mac_side", side);
+    }
+
+    private void OnMacOffsetChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (Math.Abs(MacOffsetSlider.Value - settings.MacOffsetMm) < 0.5) return;
+        settings.MacOffsetMm = Math.Round(e.NewValue, 0);
+        settings.Save();
+        UpdateMacOffsetText();
+    }
+
+    private void UpdateMacOffsetText() =>
+        MacOffsetText.Text = settings.MacOffsetMm == 0
+            ? "How far the Mac's centre sits below this PC's"
+            : $"{settings.MacOffsetMm:+0;-0} mm relative to this PC's centre";
 
     private void StartReceiver(Action? onConnected = null)
     {
@@ -490,16 +573,16 @@ public sealed partial class MainWindow : Window
                 Log.Write("paired", $"mac={settings.MacId}");
                 // Hand over without a gap: the old session keeps running until the new key's session is up.
                 var previous = receiver;
-                receiver = null;
+                StopPeer();
                 if (settings.Enabled && previous is not null)
                 {
-                    StartReceiver(onConnected: () => previous.Dispose());
+                    StartPeer(onConnected: () => previous.Dispose());
                     _ = Task.Delay(10_000).ContinueWith(_ => previous.Dispose());
                 }
                 else
                 {
                     previous?.Dispose();
-                    if (settings.Enabled) StartReceiver();
+                    if (settings.Enabled) StartPeer();
                 }
                 UpdateDetail();
                 ShowPairing(false);

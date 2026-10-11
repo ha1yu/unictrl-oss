@@ -38,6 +38,11 @@ enum KeyMap {
     static let capsLock: UInt16 = 0x39
     static let function: UInt16 = 0x3F
 
+    /// HID usage -> Mac keycode, `keyboard` inverted. The usages are unique, so the inverse is exact;
+    /// the receiver side (a Windows sender's keys) uses it. PrintScreen (0x46), ScrollLock and the
+    /// non-US #/~ key have no Mac keycode and are dropped by the caller.
+    static let inverse: [UInt16: UInt16] = Dictionary(uniqueKeysWithValues: keyboard.map { ($0.value, $0.key) })
+
     /// NX_KEYTYPE_* media keys (NSSystemDefined subtype 8) to HID consumer usages (page 0x0C).
     static let media: [Int: UInt16] = [
         0: 0xE9,  // sound up

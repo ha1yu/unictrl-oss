@@ -242,7 +242,7 @@ internal sealed class Receiver : IDisposable
                     lastSpikeLog = DateTime.UtcNow;
                     Log.Diagnostic("delay_spike", $"late_ms={lateMs:F1} waited_ms={(arrivalUs - lastDoneUs) / 1000.0:F1} prev_process_ms={lastProcessMs:F1}");
                 }
-                if (exit is { } e) send(Messages.Leave(e));
+                if (exit is { } e) send(Messages.Leave(e.YMm, e.Right));
                 break;
             }
             case MessageType.Quality:

@@ -1,0 +1,67 @@
+[
+  {
+    "name": "enter-left-openright",
+    "hex": "10000048410004",
+    "note": "enter yMm=12.5 edge=left flags: rightOpen only"
+  },
+  {
+    "name": "enter-right-resume-all-open",
+    "hex": "10000050C00107",
+    "note": "enter yMm=-3.25 edge=right flags: resume|leftOpen|rightOpen"
+  },
+  {
+    "name": "move",
+    "hex": "120000C03F000010C0EFCDAB00",
+    "note": "move dxMm=1.5 dyMm=-2.25 sentUs=0x00ABCDEF"
+  },
+  {
+    "name": "move-raw",
+    "hex": "1600004040000080BFFFFFFFFF",
+    "note": "moveRaw dx=3.0 dy=-1.0 sentUs=0xFFFFFFFF"
+  },
+  {
+    "name": "button-back-down",
+    "hex": "130301",
+    "note": "button=3(back) down"
+  },
+  {
+    "name": "button-left-up",
+    "hex": "130000",
+    "note": "button=0(left) up"
+  },
+  {
+    "name": "wheel",
+    "hex": "140000803F000000BF",
+    "note": "wheel dyLines=1.0 dxLines=-0.5"
+  },
+  {
+    "name": "key-a-down",
+    "hex": "1507040001",
+    "note": "key page=0x07 usage=0x0004(A) down"
+  },
+  {
+    "name": "key-volup-up",
+    "hex": "150CE90000",
+    "note": "key page=0x0C usage=0x00E9(volume up) up"
+  },
+  {
+    "name": "key-caps-state",
+    "hex": "1507390001",
+    "note": "key page=0x07 usage=0x0039(caps lock) state=on"
+  },
+  {
+    "name": "leave-right",
+    "hex": "110000C84201",
+    "note": "leave yMm=100.0 edge=right"
+  },
+  {
+    "name": "action-start",
+    "hex": "1702",
+    "note": "action=2 (Start menu)"
+  },
+  {
+    "name": "ping",
+    "hex": "20EFCDAB8967452301",
+    "note": "ping stamp=0x0123456789ABCDEF"
+  }
+]
