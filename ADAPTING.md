@@ -57,12 +57,20 @@ These are sensible defaults for most people, but they were tuned for Typeless.
 
 ## 5. Topology that has actually been used
 
-- **Sender is always the Mac**, receivers are Windows PCs. Windows cannot be the sender, and Mac to Mac
-  is not supported (Universal Control covers that).
+- Either computer can be the **sender** (the one the keyboard and mouse are attached to). Originally
+  only the Mac was; with the Windows app set to "This PC shares with the Mac" and the Mac to "A PC
+  shares with this Mac", the input flows the other way over the same session — pairing, discovery
+  and the firewall behaviour are unchanged. The reversed direction is newer and has not had the
+  original's daily-use polishing: on a Mac receiver only the volume media keys are replayed (play,
+  next, previous and brightness are dropped), and the `native` pointer mode is scaled counts rather
+  than true pointer ballistics, so `physical` is the default.
+- **Receivers are Windows PCs** (either direction); Mac to Mac is not supported (Universal Control
+  covers that).
 - Daily use: **one Mac and one Windows PC**, PC on the Mac's right. Several PCs and PC-to-PC crossing
-  were tested only with a stand-in PC (`tools/fake-pc`). The PC on the Mac's left, and dragging the
-  screens in the arrangement canvas, have not been hand-tested.
-- One display per computer. Multiple monitors on either side are not handled specially.
+  were tested only with a stand-in PC (`tools/fake-pc`), which can also play the sender against a
+  Mac in the receiver role (`fake-pc send`). The PC on the Mac's left, and dragging the
+  screens in the arrangement canvas, have not been hand-tested. One display per computer. Multiple
+  monitors on either side are not handled specially.
 - The Windows secure desktop (lock screen, UAC prompts) cannot receive input; there is no service.
 
 ## 6. macOS private APIs

@@ -149,8 +149,10 @@ pointer reaching an outer edge. When it crosses, the Mac freezes and hides its o
 every move, click, scroll and key to the PC, which replays them with `SendInput`. The PC tells the Mac
 when the pointer reaches its far edge, and the pointer comes back.
 
-The PC connects out to the Mac (TCP 24860), so Windows needs no inbound firewall rule. The full wire
-protocol is in [docs/PROTOCOL.md](docs/PROTOCOL.md) and the key mapping in [docs/KEYMAP.md](docs/KEYMAP.md).
+The PC connects out to the Mac (TCP 24860), so Windows needs no inbound firewall rule — in either
+direction: with the keyboard and mouse on the PC, the input messages simply flow the other way over
+the same session. The full wire protocol is in [docs/PROTOCOL.md](docs/PROTOCOL.md) and the key
+mapping in [docs/KEYMAP.md](docs/KEYMAP.md).
 
 ## FAQ
 
@@ -163,7 +165,10 @@ pointer speed and physical screen sizes built in. It is independent code, not a 
 
 **Why no clipboard or file transfer?** To do one thing well. Clipboard sync is a separate product.
 
-**Can Windows be the computer with the keyboard and mouse?** Not today: the Mac is always the sender.
+**Can Windows be the computer with the keyboard and mouse?** Yes. On the PC choose *This PC shares
+with the Mac* (Settings › Direction), and on the Mac choose *A PC shares with this Mac* (Settings ›
+General; both take effect at the next start). The network is unchanged: the Mac still listens, the PC
+still connects out and types the pairing code; only the direction of the input flips.
 
 **Does it work over the internet?** It is designed for a local network. Wi-Fi latency shows up as pointer
 hitches; a cable on either computer helps, and the connection checklist says what else to try.
