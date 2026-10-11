@@ -12,3 +12,4 @@ settings.json
 *.pfx
 __pycache__/
 *.pyc
+.zcode/
