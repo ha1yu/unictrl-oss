@@ -69,4 +69,56 @@ internal static class KeyTable
         extended = (code & E0) != 0;
         return true;
     }
+
+    // ---- The sender role's inverse: hook scan codes -> HID usages of the physical key ----
+
+    /// The base table inverted. Profile overlays are not applied: the wire carries usages of the
+    /// physical key and the receiver does its own modifier mapping.
+    private static readonly Dictionary<(ushort Scan, bool Extended), ushort> UsageOf = BuildUsageOf();
+
+    private static Dictionary<(ushort, bool), ushort> BuildUsageOf()
+    {
+        var map = new Dictionary<(ushort, bool), ushort>();
+        foreach (var (usage, code) in Keyboard)
+        {
+            var key = ((ushort)(code & 0xFF), (code & E0) != 0);
+            // 0x31 (backslash) and 0x32 (non-US #/~) share scan 0x2B; keep the first (0x31) and let
+            // the caller's VK pick the right one.
+            map.TryAdd(key, usage);
+        }
+        return map;
+    }
+
+    /// The consumer usages (page 0x0C) for the media virtual keys the hook reports.
+    private static readonly Dictionary<uint, ushort> ConsumerUsageOf =
+        Consumer.ToDictionary(pair => (uint)pair.Value, pair => pair.Key);
+
+    /// The physical usage for a key event the low-level hook saw: page 0x07 from the scan code
+    /// (E0 extended flag included), or page 0x0C for media keys that only arrive with a VK.
+    public static bool TryGetUsage(ushort scanCode, bool extended, uint virtualKey, out byte page, out ushort usage)
+    {
+        // Keys that only carry a VK (media keys from some drivers) or that share a scan code.
+        switch (virtualKey)
+        {
+            case 0xDC: page = 0x07; usage = 0x31; return true; // VK_OEM_5 backslash
+            case 0xDE: page = 0x07; usage = 0x32; return true; // VK_OEM_7 non-US #/~
+            default:
+                if (ConsumerUsageOf.TryGetValue(virtualKey, out var consumer))
+                {
+                    page = 0x0C;
+                    usage = consumer;
+                    return true;
+                }
+                break;
+        }
+        if (scanCode != 0 && UsageOf.TryGetValue((scanCode, extended), out var keyboardUsage))
+        {
+            page = 0x07;
+            usage = keyboardUsage;
+            return true;
+        }
+        page = 0;
+        usage = 0;
+        return false;
+    }
 }
