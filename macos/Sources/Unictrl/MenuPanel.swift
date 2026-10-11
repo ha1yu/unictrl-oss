@@ -52,7 +52,7 @@ struct MenuPanel: View {
             .frame(width: 30, height: 30)
             VStack(alignment: .leading, spacing: 1) {
                 Text("Unictrl").font(.system(size: 13, weight: .semibold))
-                Text(controller.enabled ? controller.statusLine : "Paused")
+                Text(controller.enabled ? controller.statusLine : NSLocalizedString("Paused", comment: ""))
                     .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer()
@@ -100,9 +100,9 @@ struct StatusLabel: View {
     }
 
     private var text: String {
-        guard device.online else { return "Offline" }
-        if inUse { return "In use" }
-        return device.latencyMs.map { "\($0) ms" } ?? "Connected"
+        guard device.online else { return NSLocalizedString("Offline", comment: "") }
+        if inUse { return NSLocalizedString("In use", comment: "") }
+        return device.latencyMs.map { "\($0) ms" } ?? NSLocalizedString("Connected", comment: "")
     }
 }
 
@@ -124,7 +124,8 @@ private struct ToggleTile: View {
                 .frame(width: 28, height: 28)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(title).font(.system(size: 12, weight: .semibold)).lineLimit(1)
-                    Text(isOn ? "On" : "Off").font(.system(size: 11)).foregroundStyle(.secondary)
+                    Text(isOn ? NSLocalizedString("On", comment: "") : NSLocalizedString("Off", comment: ""))
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
             }

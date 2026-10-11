@@ -17,6 +17,10 @@ cp "$bin" "$stage/Contents/MacOS/Unictrl"
 cp "$here/Info.plist" "$stage/Contents/Info.plist"
 icons="$here/../assets/icons/mac"
 cp "$icons/Unictrl.icns" "$icons/menubar/UnictrlMenubarTemplate.png" "$icons/menubar/UnictrlMenubarTemplate@2x.png" "$stage/Contents/Resources/"
+# Localizations: SwiftUI Text literals look these up in the app bundle by system language.
+for lproj in "$here"/Resources/*.lproj; do
+  [ -d "$lproj" ] && cp -R "$lproj" "$stage/Contents/Resources/"
+done
 # macOS 26 and later draw the layered icon (Assets.car, CFBundleIconName); earlier versions use the
 # flat Unictrl.icns above (CFBundleIconFile). actool also writes a small fallback .icns, not used.
 car=$(mktemp -d)

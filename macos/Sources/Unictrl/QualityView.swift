@@ -3,10 +3,10 @@ import SwiftUI
 extension QualityReport.Grade {
     var label: String {
         switch self {
-        case .idle: "Waiting for movement"
-        case .smooth: "Smooth"
-        case .fair: "Some hitches"
-        case .poor: "Choppy"
+        case .idle: NSLocalizedString("Waiting for movement", comment: "")
+        case .smooth: NSLocalizedString("Smooth", comment: "")
+        case .fair: NSLocalizedString("Some hitches", comment: "")
+        case .poor: NSLocalizedString("Choppy", comment: "")
         }
     }
 

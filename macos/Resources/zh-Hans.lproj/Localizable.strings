@@ -1,0 +1,96 @@
+/* Unictrl 简体中文界面。键为代码里的英文字符串；系统语言为中文时自动生效。 */
+
+/* 设置 · 屏幕 */
+"Screens" = "屏幕";
+"Drag to match your desk" = "拖动以对应你的桌面布局";
+"No PCs yet" = "还没有 PC";
+"Pair a Windows PC…" = "配对 Windows PC…";
+"Devices" = "设备";
+"This Mac" = "这台 Mac";
+"Arrange screens" = "排列屏幕";
+
+/* 设置 · 通用 */
+"General" = "通用";
+"Direction" = "方向";
+"Mac shares with the PCs" = "Mac 共享给 PC";
+"A PC shares with this Mac" = "PC 共享给 Mac";
+"Which computer the keyboard and mouse are attached to. Changing it takes effect the next time Unictrl starts." = "键盘和鼠标接在哪台电脑上。更改在 Unictrl 下次启动时生效。";
+"Accept the PC’s keyboard and mouse" = "接受 PC 的键盘和鼠标";
+"Share this Mac’s keyboard and mouse" = "共享这台 Mac 的键盘和鼠标";
+"Share on Easy-Switch" = "Easy-Switch 共享通道";
+"Any channel" = "任意通道";
+"Channel %lld" = "通道 %lld";
+"Open at login" = "登录时打开";
+"Show in menu bar" = "在菜单栏显示";
+"Show in Dock" = "在 Dock 中显示";
+"With both icons off, open Unictrl again from Spotlight or Launchpad to see Settings." = "两个图标都关闭时，从聚焦或启动台再次打开 Unictrl 即可显示设置。";
+"Move keyboard and mouse to a PC when this Mac sleeps" = "这台 Mac 睡眠时把键盘和鼠标移交给 PC";
+"Pointer on PCs" = "PC 上的指针";
+"Use each PC’s settings" = "使用各 PC 自己的设置";
+"Match this Mac" = "与这台 Mac 一致";
+"Pointer speed on PCs" = "PC 上的指针速度";
+"Lower it if the pointer feels loose when you move fast." = "快速移动觉得指针发飘时调低。";
+"Permissions" = "权限";
+"Allowed" = "已允许";
+"Accessibility" = "辅助功能";
+"Moves the pointer between computers" = "在电脑之间移动指针";
+"Input Monitoring" = "输入监控";
+"Reads the MX Keys special keys" = "读取 MX Keys 的特殊按键";
+"Allow…" = "允许…";
+
+/* 设置 · 滚轮 */
+"Mouse wheel" = "鼠标滚轮";
+"Reverse mouse wheel" = "反转鼠标滚轮";
+"Wheel mice only; trackpads keep natural scrolling. Also applies on your PCs." = "仅作用于滚轮鼠标；触控板保持自然滚动。对你的 PC 同样生效。";
+"Smooth scrolling" = "平滑滚动";
+"Scroll speed on this Mac" = "这台 Mac 的滚动速度";
+"Scroll speed on PCs" = "PC 上的滚动速度";
+"On top of the PC’s own lines-per-notch setting." = "在 PC 自己的“每格行数”设置之上叠加。";
+
+/* 重命名 */
+"Rename" = "重命名";
+"Cancel" = "取消";
+"Shown on the Mac and on every PC. Leave empty for the computer's own name." = "在 Mac 和每台 PC 上显示。留空则使用电脑自己的名称。";
+
+/* 菜单栏面板 */
+"Accessibility is off" = "辅助功能未开启";
+"Needed to move the pointer to your PCs." = "把指针移到你的 PC 需要此权限。";
+"Input Monitoring is off" = "输入监控未开启";
+"Needed for the MX Keys special keys." = "读取 MX Keys 特殊按键需要此权限。";
+"Reverse Wheel" = "反转滚轮";
+"Smooth Scroll" = "平滑滚动";
+"Settings…" = "设置…";
+"Quit Unictrl" = "退出 Unictrl";
+
+/* 配对窗口 */
+"Pair Windows PC" = "配对 Windows PC";
+"Enter this code in Unictrl on your Windows PC" = "在 Windows PC 的 Unictrl 中输入此代码";
+"Paired" = "已配对";
+"This code is no longer valid." = "此代码已失效。";
+"Choose Pair Windows PC… again for a new code." = "重新点“配对 Windows PC…”获取新代码。";
+"Expires in %d:%02d" = "%d:%02d 后失效";
+
+/* 连接质量 */
+"Connection" = "连接";
+"Last minute, live" = "最近一分钟，实时";
+"Details and tips" = "详情与建议";
+"Waiting for movement" = "等待指针移动";
+"Smooth" = "流畅";
+"Some hitches" = "偶有停顿";
+"Choppy" = "卡顿";
+
+/* 状态（代码中动态生成） */
+"Needs Accessibility permission" = "需要辅助功能权限";
+"Paused on Easy-Switch %d" = "已在 Easy-Switch 通道 %d 上暂停";
+"Paused: keyboard not on this Mac" = "已暂停：键盘不在这台 Mac 上";
+"Using %@" = "正在使用 %@";
+"No PCs paired" = "尚未配对 PC";
+"Waiting for PCs…" = "等待 PC…";
+"Connected to %@" = "已连接到 %@";
+"Connected to %lld PCs" = "已连接到 %lld 台 PC";
+"Paused" = "已暂停";
+"Offline" = "离线";
+"In use" = "使用中";
+"Connected" = "已连接";
+"On" = "开";
+"Off" = "关";

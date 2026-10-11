@@ -20,7 +20,7 @@ import SwiftUI
         if window == nil {
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 360, height: 230),
                                   styleMask: [.titled, .closable], backing: .buffered, defer: false)
-            window.title = "Pair Windows PC"
+            window.title = NSLocalizedString("Pair Windows PC", comment: "")
             window.isReleasedWhenClosed = false
             window.delegate = self
             window.contentView = NSHostingView(rootView: PairingView(model: self))
@@ -70,7 +70,8 @@ struct PairingView: View {
                 Text(model.code.prefix(3) + " " + model.code.suffix(3))
                     .font(.system(size: 44, weight: .semibold, design: .rounded)).monospacedDigit()
                     .textSelection(.enabled)
-                Text("Expires in \(model.secondsLeft / 60):\(String(format: "%02d", model.secondsLeft % 60))")
+                Text(String(format: NSLocalizedString("Expires in %d:%02d", comment: ""),
+                            model.secondsLeft / 60, model.secondsLeft % 60))
                     .font(.caption).foregroundStyle(.tertiary).monospacedDigit()
             case .paired:
                 Image(systemName: "checkmark.circle.fill").font(.system(size: 40)).foregroundStyle(.green)

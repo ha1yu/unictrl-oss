@@ -191,16 +191,20 @@ import ServiceManagement
     }
 
     var statusLine: String {
-        guard accessibilityGranted else { return "Needs Accessibility permission" }
+        guard accessibilityGranted else { return NSLocalizedString("Needs Accessibility permission", comment: "") }
         if !channelAllowsSharing {
-            if let current = currentChannel, keyboardHere { return "Paused on Easy-Switch \(current + 1)" }
-            return "Paused: keyboard not on this Mac"
+            if let current = currentChannel, keyboardHere { return String(format: NSLocalizedString("Paused on Easy-Switch %d", comment: ""), current + 1) }
+            return NSLocalizedString("Paused: keyboard not on this Mac", comment: "")
         }
-        if let remoteID, let device = devices.first(where: { $0.id == remoteID }) { return "Using \(device.name)" }
+        if let remoteID, let device = devices.first(where: { $0.id == remoteID }) {
+            return String(format: NSLocalizedString("Using %@", comment: ""), device.name)
+        }
         let online = devices.filter(\.online)
-        if devices.isEmpty { return "No PCs paired" }
-        if online.isEmpty { return "Waiting for PCs…" }
-        return online.count == 1 ? "Connected to \(online[0].name)" : "Connected to \(online.count) PCs"
+        if devices.isEmpty { return NSLocalizedString("No PCs paired", comment: "") }
+        if online.isEmpty { return NSLocalizedString("Waiting for PCs…", comment: "") }
+        return online.count == 1
+            ? String(format: NSLocalizedString("Connected to %@", comment: ""), online[0].name)
+            : String(format: NSLocalizedString("Connected to %lld PCs", comment: ""), online.count)
     }
 
     /// This Mac's name as shown everywhere: the user's choice, else the computer name.

@@ -83,7 +83,9 @@ struct SettingsView: View {
                     Text("Direction")
                     Text("Which computer the keyboard and mouse are attached to. Changing it takes effect the next time Unictrl starts.")
                 }
-                Toggle(controller.role == "receiver" ? "Accept the PC’s keyboard and mouse" : "Share this Mac’s keyboard and mouse",
+                Toggle(controller.role == "receiver"
+                       ? NSLocalizedString("Accept the PC’s keyboard and mouse", comment: "")
+                       : NSLocalizedString("Share this Mac’s keyboard and mouse", comment: ""),
                        isOn: $controller.enabled)
                 if controller.role == "sender" {
                 Picker(selection: $controller.shareChannel) {
