@@ -39,6 +39,10 @@ import ServiceManagement
     @Published var pointerMode: String {
         didSet { settings.pointerMode = pointerMode; applySettings() }
     }
+    /// Receiver role: accelerate the counts a PC sends with the Apple-style curve.
+    @Published var macPointerAcceleration: Bool {
+        didSet { settings.macPointerAcceleration = macPointerAcceleration; applySettings() }
+    }
     /// See UnictrlSettings.shareChannel; -1 in the picker stands for "any channel".
     @Published var shareChannel: Int {
         didSet {
@@ -174,6 +178,7 @@ import ServiceManagement
         showMenuBarIcon = settings.showMenuBarIcon
         showDockIcon = settings.showDockIcon
         pointerMode = settings.pointerMode
+        macPointerAcceleration = settings.macPointerAcceleration
         scrollScale = settings.scrollScale
         pcPointerScale = settings.pcPointerScale
         pcScrollScale = settings.pcScrollScale
@@ -361,6 +366,7 @@ import ServiceManagement
         capture.update(settings: settings)
         injector.reverseWheel = settings.reverseMouseWheel
         injector.smoothWheel = settings.smoothScrolling
+        injector.useAcceleration = settings.macPointerAcceleration
     }
 
     func quit() {
@@ -378,6 +384,7 @@ import ServiceManagement
         }
         injector.reverseWheel = settings.reverseMouseWheel
         injector.smoothWheel = settings.smoothScrolling
+        injector.useAcceleration = settings.macPointerAcceleration
         injector.localScrollHandler = { ScrollPoster.post(dx: $0, dy: $1) }
 
         capture.send = { [unowned self] peer, message in server.send(message, to: peer) }

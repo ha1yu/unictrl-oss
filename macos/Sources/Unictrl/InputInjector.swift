@@ -20,6 +20,11 @@ final class InputInjector {
     /// The Mac's wheel settings, applied to what the sender forwards (set from AppController).
     var reverseWheel = false
     var smoothWheel = true
+    /// When on, incoming counts run through the Apple-style acceleration curve (PointerCurve) at
+    /// the user's tracking-speed level, so fast flicks travel like on a native Mac mouse. Off: the
+    /// plain linear scale, as before.
+    var useAcceleration = false
+    private var lastMoveAt = Date.distantPast
     /// Where the smoother's glide lands; AppController points it at ScrollPoster.
     var localScrollHandler: (Double, Double) -> Void = { _, _ in }
 
@@ -148,8 +153,18 @@ final class InputInjector {
     }
 
     private func moveRawNow(dx: Float, dy: Float) {
-        applyMotion(dx: Double(dx) / Self.rawCountsPerMm * pointsPerMm,
-                    dy: Double(dy) / Self.rawCountsPerMm * pointsPerMm)
+        var gain = 1.0
+        if useAcceleration {
+            // Hand speed from the counts and the time between packets, clamped so a stalled link
+            // or a burst of same-moment packets reads as a sane speed.
+            let now = Date()
+            let dt = max(0.001, min(0.1, now.timeIntervalSince(lastMoveAt)))
+            lastMoveAt = now
+            let speed = Double((dx * dx + dy * dy).squareRoot()) / (dt * 1000)
+            gain = PointerCurve.gain(velocityCountsPerMs: speed, level: PointerCurve.systemLevel())
+        }
+        applyMotion(dx: Double(dx) * gain / Self.rawCountsPerMm * pointsPerMm,
+                    dy: Double(dy) * gain / Self.rawCountsPerMm * pointsPerMm)
     }
 
     private func applyMotion(dx: Double, dy: Double) {
@@ -216,7 +231,10 @@ final class InputInjector {
         var dy = Double(dyLines)
         var dx = Double(dxLines)
         if reverseWheel { dy = -dy; dx = -dx }
-        let pixelsPerLine = 10.0 * (NSScreen.main?.backingScaleFactor ?? 2)
+        // One wire line is one Windows wheel notch, which covers about 60 px there (3 text lines,
+        // ~100 px in a browser at the default). Points, not device pixels: the poster's pixel-unit
+        // wheel values scroll like points (see InputCapture's own-wheel path).
+        let pixelsPerLine = 60.0
         if smoothWheel {
             localScroll.add(dx: dx * pixelsPerLine, dy: dy * pixelsPerLine)
         } else {

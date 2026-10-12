@@ -27,6 +27,10 @@ struct UnictrlSettings: Codable {
     /// "native": Windows applies its own pointer speed and acceleration to raw mouse counts, like a
     /// mouse connected to it directly. "physical": Mac acceleration, converted by millimetres.
     var pointerMode = "native"
+    /// Receiver role: run the counts a PC sends through the Apple-style acceleration curve
+    /// (PointerCurve) at the system's tracking-speed level. macOS never accelerates injected input,
+    /// so off means a plain linear scale.
+    var macPointerAcceleration = false
     /// Scales pointer movement sent to PCs (native mode: before Windows' own speed and acceleration).
     var pcPointerScale = 1.0
     /// Scales scrolling sent to PCs; `scrollScale` is the Mac's own.
@@ -57,7 +61,7 @@ struct UnictrlSettings: Codable {
 
     private enum CodingKeys: String, CodingKey {
         case role
-        case pcPointerScale, pcScrollScale, shareChannel, readySound, readySoundName
+        case pcPointerScale, pcScrollScale, macPointerAcceleration, shareChannel, readySound, readySoundName
         case peers, arrangement, pairingKey, deviceID, port, peerSide, verticalOffsetMm, invertScroll, scrollScale,
              reverseMouseWheel, smoothScrolling, pointerMode, enabled, sleepHandoff, showMenuBarIcon, showDockIcon,
              macAlias, loginItemConfigured, diagnostics
@@ -81,6 +85,7 @@ struct UnictrlSettings: Codable {
         smoothScrolling = try c.decodeIfPresent(Bool.self, forKey: .smoothScrolling) ?? true
         pointerMode = try c.decodeIfPresent(String.self, forKey: .pointerMode) ?? "native"
         pcPointerScale = try c.decodeIfPresent(Double.self, forKey: .pcPointerScale) ?? 1
+        macPointerAcceleration = try c.decodeIfPresent(Bool.self, forKey: .macPointerAcceleration) ?? false
         pcScrollScale = try c.decodeIfPresent(Double.self, forKey: .pcScrollScale) ?? 1
         shareChannel = try c.decodeIfPresent(Int.self, forKey: .shareChannel)
         readySound = try c.decodeIfPresent(Bool.self, forKey: .readySound) ?? true

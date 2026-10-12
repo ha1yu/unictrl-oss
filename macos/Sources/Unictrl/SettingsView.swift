@@ -87,6 +87,12 @@ struct SettingsView: View {
                        ? NSLocalizedString("Accept the PC’s keyboard and mouse", comment: "")
                        : NSLocalizedString("Share this Mac’s keyboard and mouse", comment: ""),
                        isOn: $controller.enabled)
+                if controller.role == "receiver" {
+                    Toggle(isOn: $controller.macPointerAcceleration) {
+                        Text("Pointer acceleration from the PC")
+                        Text("Give the PC’s pointer the same speed curve as a mouse on this Mac, following the system tracking speed.")
+                    }
+                }
                 Picker(selection: $controller.shareChannel) {
                     Text("Any channel").tag(-1)
                     ForEach(0..<3) { Text("Channel \($0 + 1)").tag($0) }

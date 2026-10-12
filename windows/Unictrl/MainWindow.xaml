@@ -183,6 +183,7 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <FontIcon Glyph="&#xE7F4;" Style="{StaticResource CardIconStyle}" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,8">
@@ -226,6 +227,16 @@
                             </StackPanel>
                             <CheckBox x:Name="MacReverseWheelBox" Grid.Row="3" Grid.Column="2" VerticalAlignment="Center"
                                       Checked="OnMacReverseWheelChanged" Unchecked="OnMacReverseWheelChanged" />
+                            <Rectangle Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Height="1"
+                                       Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
+                            <StackPanel Grid.Row="4" Grid.Column="1" VerticalAlignment="Center" Margin="0,8">
+                                <TextBlock x:Name="MacScrollTitle" Style="{StaticResource BodyTextBlockStyle}" Text="Scroll speed on the Mac" />
+                                <TextBlock x:Name="MacScrollText" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="Scales the wheel distance this mouse sends to the Mac" />
+                            </StackPanel>
+                            <Slider x:Name="MacScrollSlider" Grid.Row="4" Grid.Column="2" Width="180" VerticalAlignment="Center"
+                                    Minimum="0.5" Maximum="4" StepFrequency="0.1" ValueChanged="OnMacScrollChanged" />
                         </Grid>
                     </Border>
                     <Border Style="{StaticResource CardStyle}">

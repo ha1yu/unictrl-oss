@@ -10,6 +10,8 @@
 "Arrange screens" = "排列屏幕";
 
 /* 设置 · 通用 */
+"Pointer acceleration from the PC" = "来自 PC 的指针加速";
+"Give the PC’s pointer the same speed curve as a mouse on this Mac, following the system tracking speed." = "让 PC 的指针使用与本 Mac 鼠标相同的速度曲线，跟随系统跟踪速度设置。";
 "General" = "通用";
 "Direction" = "方向";
 "Mac shares with the PCs" = "Mac 共享给 PC";

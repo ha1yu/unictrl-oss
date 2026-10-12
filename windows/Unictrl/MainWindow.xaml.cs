@@ -52,6 +52,7 @@ public sealed partial class MainWindow : Window
         MacOffsetSlider.Value = settings.MacOffsetMm;
         MacSpeedSlider.Value = settings.MacPointerScale;
         MacReverseWheelBox.IsChecked = settings.MacReverseWheel;
+        MacScrollSlider.Value = settings.MacScrollScale;
         UpdateMacOffsetText();
         RestoreDetails();
         StartAtLoginSwitch.IsOn = settings.StartAtLogin;
@@ -116,6 +117,8 @@ public sealed partial class MainWindow : Window
         MacSpeedText.Text = "缩放发送给 Mac 的移动量，指针在 Mac 上时生效";
         MacWheelTitle.Text = "在 Mac 上反转鼠标滚轮";
         MacWheelText.Text = "翻转这只鼠标发给 Mac 的滚轮方向";
+        MacScrollTitle.Text = "Mac 上的滚轮速度";
+        MacScrollText.Text = "缩放发给 Mac 的滚轮距离";
         PairHint.Text = "在 Mac 上点菜单栏的 Unictrl，选择“配对 Windows PC…”，然后输入它显示的代码。";
         PairAgainButton.Content = "重新配对";
         PairButton.Content = "配对";
@@ -358,6 +361,13 @@ public sealed partial class MainWindow : Window
     {
         if (MacReverseWheelBox.IsChecked == settings.MacReverseWheel) return;
         settings.MacReverseWheel = MacReverseWheelBox.IsChecked == true; // read by the hook for each wheel event
+        settings.Save();
+    }
+
+    private void OnMacScrollChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (Math.Abs(MacScrollSlider.Value - settings.MacScrollScale) < 0.01) return;
+        settings.MacScrollScale = Math.Round(e.NewValue, 1); // read by the hook for each wheel event
         settings.Save();
     }
 

@@ -21,6 +21,8 @@ public sealed class Settings
     public double MacPointerScale { get; set; } = 1.0;
     /// Sender role: flips the wheel direction this mouse sends to the Mac.
     public bool MacReverseWheel { get; set; }
+    /// Sender role: multiplies the wheel lines sent to the Mac.
+    public double MacScrollScale { get; set; } = 1.0;
     /// Last address the Mac was found at; refreshed by discovery when it stops answering there.
     public string MacAddress { get; set; } = "";
     /// The paired Mac's device ID, to pick it out when several Macs answer discovery.

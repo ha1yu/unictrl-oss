@@ -74,6 +74,8 @@ public class SenderCoreTests
         Assert.Equal(-2f, SenderCore.Wheel(-240, 0).DyLines);
         Assert.Equal(-1f, SenderCore.Wheel(0, 120).DxLines);       // horizontal is inverted on the wire
         Assert.Equal(0.5f, SenderCore.Wheel(60, 0).DyLines);       // high-resolution wheels send finer deltas
+        Assert.Equal(3f, SenderCore.Wheel(120, 0, reverse: false).DyLines * 3); // the Mac scroll scale multiplies lines
+        Assert.Equal(-3f, SenderCore.Wheel(120, 0, reverse: true).DyLines * 3); // and composes with the direction flip
     }
 
     [Fact]
