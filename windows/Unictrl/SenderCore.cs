@@ -22,8 +22,11 @@ internal static class SenderCore
     public static bool AtOuterEdge(Spot at, Screen screen, bool right, Func<int, int, bool> screenExistsBeyond)
     {
         if (at.Y < screen.Top || at.Y >= screen.Bottom) return false;
+        // On the edge, or past it: a real cursor is clamped to the screen, but the position a hook
+        // event reports can overshoot (fast flicks, injected input), and that is the same push.
+        var onEdge = right ? at.X >= screen.Right - 2 : at.X <= screen.Left + 2;
+        if (!onEdge) return false;
         var x = right ? screen.Right : screen.Left;
-        if (Math.Abs(at.X - x) > 2) return false;
         return !screenExistsBeyond(right ? x : x - 1, at.Y);
     }
 
