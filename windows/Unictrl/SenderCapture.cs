@@ -260,13 +260,13 @@ internal sealed class SenderCapture : IDisposable
             case WmXUp: sender.Send(Messages.Button(XButton(data), false)); return;
             case WmWheel:
             {
-                var (dy, _) = SenderCore.Wheel((short)(data.MouseData >> 16), 0);
+                var (dy, _) = SenderCore.Wheel((short)(data.MouseData >> 16), 0, settings.MacReverseWheel);
                 sender.Send(Messages.Wheel(dy, 0));
                 return;
             }
             case WmHWheel:
             {
-                var (_, dx) = SenderCore.Wheel(0, (short)(data.MouseData >> 16));
+                var (_, dx) = SenderCore.Wheel(0, (short)(data.MouseData >> 16), settings.MacReverseWheel);
                 sender.Send(Messages.Wheel(0, dx));
                 return;
             }

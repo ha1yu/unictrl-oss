@@ -52,8 +52,11 @@ internal static class SenderCore
     /// Wheel deltas as the wire wants them: lines, + = content up. Windows reports multiples of 120
     /// per notch (finer for high-resolution wheels); the horizontal axis is inverted relative to the
     /// wire (the receiver negates it again when injecting, see Injector.Wheel).
-    public static (float DyLines, float DxLines) Wheel(int wheelDelta, int hWheelDelta) =>
-        (wheelDelta / 120f, -hWheelDelta / 120f);
+    public static (float DyLines, float DxLines) Wheel(int wheelDelta, int hWheelDelta, bool reverse = false)
+    {
+        var (dy, dx) = (wheelDelta / 120f, -hWheelDelta / 120f);
+        return reverse ? (-dy, -dx) : (dy, dx);
+    }
 
     /// Accumulates outward motion while the cursor rests on an open outer edge. Windows clamps the
     /// cursor to the screen, so position deltas die at the edge; raw input counts do not, and the
