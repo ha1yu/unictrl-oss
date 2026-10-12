@@ -25,6 +25,9 @@ internal sealed class SenderCapture : IDisposable
     private Native.WndProc? windowProc;
     private nint hwnd, mouseHook, keyboardHook;
     private volatile bool remote;
+    /// UNICTRL_TESTDRIVE=1 lets software-injected input drive the capture path (it is normally
+    /// ignored), so an automated test can play the mouse without hardware. Not for normal use.
+    private static readonly bool testDrive = Environment.GetEnvironmentVariable("UNICTRL_TESTDRIVE") == "1";
     private bool panicCtrl, panicShift;
     private DateTime suppressUntil = DateTime.MinValue;
     private Native.Point lastPt;
@@ -108,7 +111,7 @@ internal sealed class SenderCapture : IDisposable
                     {
                         var header = Marshal.PtrToStructure<Native.RawInputHeader>(buffer);
                         // Injected input arrives with no device handle; only real devices count.
-                        if (header.Type == RimTypeMouse && header.Device != 0)
+                        if (header.Type == RimTypeMouse && (header.Device != 0 || testDrive))
                         {
                             var mouse = Marshal.PtrToStructure<Native.RawMouse>(buffer + (int)headerSize);
                             if ((mouse.Flags & 1) == 0) // relative only
@@ -135,7 +138,7 @@ internal sealed class SenderCapture : IDisposable
         if (code < 0) return Native.CallNextHookEx(mouseHook, code, wParam, lParam);
         var data = Marshal.PtrToStructure<Native.MsLlHookStruct>(lParam);
         // Input other software synthesised is not ours to take.
-        if ((data.Flags & Native.LlInjected) != 0) return Native.CallNextHookEx(mouseHook, code, wParam, lParam);
+        if ((data.Flags & Native.LlInjected) != 0 && !testDrive) return Native.CallNextHookEx(mouseHook, code, wParam, lParam);
         var message = (uint)wParam;
         if (remote)
         {
@@ -150,7 +153,7 @@ internal sealed class SenderCapture : IDisposable
     {
         if (code < 0 || !remote) return Native.CallNextHookEx(keyboardHook, code, wParam, lParam);
         var key = Marshal.PtrToStructure<Native.KbdLlHookStruct>(lParam);
-        if ((key.Flags & Native.LlInjected) != 0) return Native.CallNextHookEx(keyboardHook, code, wParam, lParam);
+        if ((key.Flags & Native.LlInjected) != 0 && !testDrive) return Native.CallNextHookEx(keyboardHook, code, wParam, lParam);
         var message = (uint)wParam;
         var down = message == WmKeyDown || message == WmSysKeyDown;
         // Escape hatch: the pointer is trapped on the receiver (it cannot leave, Unictrl is stuck),
@@ -219,19 +222,15 @@ internal sealed class SenderCapture : IDisposable
         {
             case WmMouseMove:
                 var scale = settings.MacPointerScale;
-                if (settings.MacPointerMode == "native")
+                // Raw counts are the reliable motion source: raw input keeps flowing while the local
+                // cursor is frozen, and the counts are unclamped at the edges (hook cursor deltas
+                // are neither). A Mac applies no ballistics to injected input, so the scale is the
+                // speed control.
+                if (rawDx != 0 || rawDy != 0)
                 {
-                    // Raw counts: the receiver applies its own pointer curve. A Mac has no public way
-                    // to accelerate injected input, so this mode carries a scale instead.
                     sender.Send(Messages.MoveRaw((float)(rawDx * scale), (float)(rawDy * scale), SentUs()));
+                    rawDx = rawDy = 0;
                 }
-                else
-                {
-                    sender.Send(Messages.Move(
-                        (float)((data.Pt.X - lastPt.X) / remoteMonitor.PixelsPerMm * scale),
-                        (float)((data.Pt.Y - lastPt.Y) / remoteMonitor.PixelsPerMm * scale), SentUs()));
-                }
-                rawDx = rawDy = 0;
                 lastPt = data.Pt;
                 return;
             case WmLDown: sender.Send(Messages.Button(0, true)); return;

@@ -13,9 +13,10 @@ public sealed class Settings
     public string MacSide { get; set; } = "left";
     /// Sender role: how far the Mac's screen centre sits below this PC's, in mm.
     public double MacOffsetMm { get; set; }
-    /// Sender role: "physical" (default) sends millimetres; "native" sends raw counts with a scale.
-    /// A Mac cannot run its pointer ballistics on injected input, so physical is the honest mode.
-    public string MacPointerMode { get; set; } = "physical";
+    /// Sender role: "native" (default) sends raw mouse counts (reliable while the local cursor is
+    /// frozen); "physical" derives millimetres from hook cursor deltas, which stall once the local
+    /// cursor stops moving, so it is only for setups that calibrate it.
+    public string MacPointerMode { get; set; } = "native";
     /// Sender role: multiplies what is sent to the Mac.
     public double MacPointerScale { get; set; } = 1.0;
     /// Last address the Mac was found at; refreshed by discovery when it stops answering there.
