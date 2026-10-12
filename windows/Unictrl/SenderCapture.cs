@@ -58,9 +58,17 @@ internal sealed class SenderCapture : IDisposable
         keyboardProc = KeyboardHook;
         windowProc = WindowProc;
         var wc = new Native.WndClass { WndProc = Marshal.GetFunctionPointerForDelegate(windowProc), ClassName = "UnictrlSender" };
-        if (Native.RegisterClassW(ref wc) == 0) return;
+        if (Native.RegisterClassW(ref wc) == 0)
+        {
+            Log.Write("capture_failed", "RegisterClassW");
+            return;
+        }
         hwnd = Native.CreateWindowExW(0, "UnictrlSender", "", 0, 0, 0, 0, 0, -3 /* HWND_MESSAGE */, 0, 0, 0);
-        if (hwnd == 0) return;
+        if (hwnd == 0)
+        {
+            Log.Write("capture_failed", "CreateWindowExW");
+            return;
+        }
         var devices = new[]
         {
             new Native.RawInputDevice { UsagePage = 1, Usage = 2, Flags = RidevInputSink, Target = hwnd }, // mouse
@@ -79,6 +87,7 @@ internal sealed class SenderCapture : IDisposable
             Log.Write("capture_failed", $"mouse={mouseHook != 0} keyboard={keyboardHook != 0}");
             return;
         }
+        Log.Write("capture_ready", $"testdrive={testDrive}");
         try
         {
             while (Native.GetMessageW(out var msg, 0, 0, 0) > 0)
@@ -199,6 +208,7 @@ internal sealed class SenderCapture : IDisposable
         var outward = macOnRight ? rawDx : -rawDx;
         rawDx = rawDy = 0;
         if (push.Add(outward)) EnterRemote(data, screen);
+        else Log.Diagnostic("edge_push", $"outward={outward:F0}");
     }
 
     private void EnterRemote(in Native.MsLlHookStruct data, SenderCore.Screen screen)

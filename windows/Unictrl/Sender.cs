@@ -243,10 +243,8 @@ internal sealed class Sender : IDisposable
                 break;
             case MessageType.Ping when reader.Has(8):
                 // A peer that acts as the sender (roles mismatched, or an older Mac) still expects
-                // the protocol's liveness answer; reply and say what we saw.
-                var stamp = reader.U64();
-                Send(Messages.Pong(stamp));
-                Log.Write("ping_from_peer", "");
+                // the protocol's liveness answer.
+                Send(Messages.Pong(reader.U64()));
                 break;
             default:
                 break; // arrangementEdit/rename/hosts/stats: no sender-side handling yet
