@@ -58,21 +58,33 @@ internal static class SenderCore
     /// Accumulates outward motion while the cursor rests on an open outer edge. Windows clamps the
     /// cursor to the screen, so position deltas die at the edge; raw input counts do not, and the
     /// push they represent is what "push the pointer past the edge" means. Grazing the edge while
-    /// moving along it, or resting there, does not cross.
+    /// moving along it, or resting there, does not cross. Raw counts arrive in packets that are not
+    /// aligned with the hook events that drain them, so a drained zero is NOT a pause in the push;
+    /// only motion inward resets it, and accumulated push goes stale after a moment.
     public sealed class EdgePush(double threshold = 40)
     {
         private double push;
+        private DateTime lastOutward = DateTime.MinValue;
 
         /// Feed the outward raw counts since the last event while pinned at the edge.
         public bool Add(double outwardCounts)
         {
-            push = outwardCounts <= 0 ? 0 : push + outwardCounts;
+            if (outwardCounts < 0) { push = 0; return false; } // the hand turned inward
+            if (outwardCounts == 0)
+            {
+                // Counts drained between packets; the push only goes stale with real time.
+                if (DateTime.UtcNow - lastOutward > TimeSpan.FromMilliseconds(180)) push = 0;
+                return false;
+            }
+            if (DateTime.UtcNow - lastOutward > TimeSpan.FromMilliseconds(180)) push = 0;
+            push += outwardCounts;
+            lastOutward = DateTime.UtcNow;
             if (push < threshold) return false;
             push = 0;
             return true;
         }
 
-        /// The cursor left the edge or the movement turned inward.
+        /// The cursor left the edge.
         public void Reset() => push = 0;
     }
 }

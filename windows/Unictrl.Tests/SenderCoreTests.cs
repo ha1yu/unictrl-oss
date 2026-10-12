@@ -89,7 +89,11 @@ public class SenderCoreTests
         Assert.False(push.Add(30));
         push.Reset();                    // movement turned inward or the cursor left the edge
         Assert.False(push.Add(5));
-        Assert.False(push.Add(-3));      // inward counts cancel the push entirely
+        Assert.True(push.Add(-3 + 40));  // inward counts cancel, fresh counts accumulate
+        // A drained zero (raw packets arrive between hook events) neither accumulates nor resets.
+        Assert.False(push.Add(30));
+        Assert.False(push.Add(0));
+        Assert.True(push.Add(15));       // 30 + 15 = 45 crosses even with zeros in between
     }
 
     [Fact]
