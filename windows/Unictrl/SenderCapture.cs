@@ -188,6 +188,8 @@ internal sealed class SenderCapture : IDisposable
         return 1;
     }
 
+    private DateTime lastEdgeLog = DateTime.MinValue;
+
     /// Local mode: only the outward push against the open outer edge on the Mac's side is watched.
     private void WatchEdge(in Native.MsLlHookStruct data)
     {
@@ -196,6 +198,11 @@ internal sealed class SenderCapture : IDisposable
         {
             push.Reset();
             return;
+        }
+        if (DateTime.UtcNow - lastEdgeLog > TimeSpan.FromMilliseconds(500))
+        {
+            lastEdgeLog = DateTime.UtcNow;
+            Log.Diagnostic("edge_watch", $"at={data.Pt.X},{data.Pt.Y} raw={rawDx},{rawDy} online={sender.Online} side={settings.MacSide}");
         }
         var macOnRight = settings.MacSide != "left";
         var screen = ScreenAt(data.Pt);
